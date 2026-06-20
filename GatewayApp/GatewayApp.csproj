@@ -22,8 +22,8 @@
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="NModbus" Version="3.0.83" />
-    <PackageReference Include="PlcComm.KvHostLink" Version="0.8.0" />
     <PackageReference Include="PlcComm.Slmp" Version="0.8.0" />
+    <ProjectReference Include="..\..\plc-comm-hostlink-dotnet\src\PlcComm.KvHostLink\PlcComm.KvHostLink.csproj" />
   </ItemGroup>
 
 </Project>

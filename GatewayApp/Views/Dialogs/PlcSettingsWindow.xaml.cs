@@ -1,6 +1,8 @@
 using GatewayApp.Models;
 using PlcComm.KvHostLink;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace GatewayApp.Views.Dialogs;
 
@@ -34,10 +36,14 @@ public partial class PlcSettingsWindow : Window
 
         SlmpRadio.IsChecked = Settings.Protocol.Equals("SLMP", StringComparison.OrdinalIgnoreCase);
         HostLinkRadio.IsChecked = !SlmpRadio.IsChecked;
-        FormGrid.IsEnabled = !isRunning;
-        SaveButton.IsEnabled = !isRunning;
+        SaveButton.Visibility = isRunning ? Visibility.Collapsed : Visibility.Visible;
         WarningText.Visibility = isRunning ? Visibility.Visible : Visibility.Collapsed;
+        WarningText.Text = isRunning ? "稼働中は読み取り専用です" : WarningText.Text;
         UpdateProfileSelector();
+        if (isRunning)
+        {
+            SetReadOnly(FormGrid);
+        }
     }
 
     public PlcSettings Settings { get; }
@@ -132,5 +138,27 @@ public partial class PlcSettingsWindow : Window
             "keyence:kv-x500-xym" => "KV-X500 / XYM",
             _ => string.IsNullOrWhiteSpace(profileName) ? "KEYENCE KV" : profileName,
         };
+    }
+
+    private static void SetReadOnly(DependencyObject parent)
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            switch (child)
+            {
+                case TextBox textBox:
+                    textBox.IsReadOnly = true;
+                    break;
+                case ComboBox comboBox:
+                    comboBox.IsEnabled = false;
+                    break;
+                case RadioButton radioButton:
+                    radioButton.IsEnabled = false;
+                    break;
+            }
+
+            SetReadOnly(child);
+        }
     }
 }

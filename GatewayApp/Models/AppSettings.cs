@@ -19,8 +19,6 @@ public sealed class MappingEntrySettings
 
     public string PlcAddress { get; set; } = string.Empty;
 
-    public DataDirection Direction { get; set; }
-
     public DisplayType DisplayType { get; set; }
 
     public string Comment { get; set; } = string.Empty;

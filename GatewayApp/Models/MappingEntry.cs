@@ -171,7 +171,6 @@ public partial class MappingEntry : ObservableObject
             ModbusType = ModbusType,
             ModbusAddress = ModbusAddress,
             PlcAddress = PlcAddress,
-            Direction = GetDefaultDirection(ModbusType),
             DisplayType = NormalizeDisplayType(ModbusType, DisplayType),
             Comment = Comment,
         };
@@ -182,7 +181,6 @@ public partial class MappingEntry : ObservableObject
         return new MappingEntry(settings.ModbusType, settings.ModbusAddress)
         {
             PlcAddress = settings.PlcAddress ?? string.Empty,
-            Direction = GetDefaultDirection(settings.ModbusType),
             DisplayType = NormalizeDisplayType(settings.ModbusType, settings.DisplayType),
             Comment = settings.Comment ?? string.Empty,
             RealScale = realScale,

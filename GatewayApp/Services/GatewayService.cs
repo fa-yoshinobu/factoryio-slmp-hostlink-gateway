@@ -13,11 +13,15 @@ public sealed class GatewayService : IAsyncDisposable
     public GatewayService()
     {
         _plc.TraceReported += message => TraceReported?.Invoke(message);
+        _modbus.UnexpectedExceptionReported += exception =>
+            WarningReported?.Invoke($"{exception.GetType().Name}: {exception.Message}");
     }
 
     public event Action<string>? WarningReported;
 
     public event Action<string>? TraceReported;
+
+    public int ModbusClientCount => _modbus.ConnectedClientCount;
 
     public async Task StartAsync(PlcSettings plcSettings, ModbusSettings modbusSettings)
     {
@@ -44,7 +48,7 @@ public sealed class GatewayService : IAsyncDisposable
 
     public async Task StopAsync()
     {
-        _runCts?.Cancel();
+        CancelRun();
 
         await _operationGate.WaitAsync();
         try
@@ -192,11 +196,28 @@ public sealed class GatewayService : IAsyncDisposable
 
     private async Task StopUnlockedAsync()
     {
-        _runCts?.Cancel();
+        CancelRun();
         _modbus.Stop();
         await _plc.DisconnectAsync();
         _runCts?.Dispose();
         _runCts = null;
+    }
+
+    private void CancelRun()
+    {
+        var runCts = _runCts;
+        if (runCts is null)
+        {
+            return;
+        }
+
+        try
+        {
+            runCts.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
     }
 
     private CancellationToken GetRunToken(CancellationToken cancellationToken)

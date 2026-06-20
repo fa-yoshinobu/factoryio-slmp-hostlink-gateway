@@ -5,6 +5,7 @@ using GatewayApp.Services;
 using GatewayApp.ViewModels;
 using GatewayApp.Views.Dialogs;
 using System.Globalization;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Windows;
@@ -43,6 +44,7 @@ internal static class Program
                 SmokeBulkAssignDeviceOptions(failures);
                 SmokePlcAddressSequence(failures);
                 SmokeValueBrushConverter(failures);
+                SmokeTodoFixes(viewModel, failures);
                 SmokeLogWindow(viewModel, failures);
                 SmokeAboutWindow(failures);
                 SmokeModbusStartStop(failures);
@@ -54,6 +56,11 @@ internal static class Program
         }
         finally
         {
+            if (window?.DataContext is MainViewModel viewModel)
+            {
+                viewModel.IsDirty = false;
+            }
+
             window?.Close();
             application?.Shutdown();
         }
@@ -397,6 +404,55 @@ internal static class Program
         catch (Exception ex)
         {
             failures.Add($"Value brush smoke failed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private static void SmokeTodoFixes(MainViewModel viewModel, List<string> failures)
+    {
+        try
+        {
+            var ledConverter = new LedStateConverter();
+            AssertBrush(Color.FromRgb(0x5a, 0x3a, 0x00), ledConverter.Convert(LedState.ForceOff, typeof(Brush), string.Empty, CultureInfo.InvariantCulture), failures, "ForceOff LED brush");
+
+            if (typeof(MappingEntrySettings).GetProperty("Direction") is not null)
+            {
+                failures.Add("MappingEntrySettings still exposes Direction.");
+            }
+
+            viewModel.IsDirty = false;
+            var mapping = new MappingEntry(ModbusType.Coil, 0);
+            viewModel.Mappings.Add(mapping);
+            if (!viewModel.IsDirty || !viewModel.WindowTitle.EndsWith(" *", StringComparison.Ordinal))
+            {
+                failures.Add("Dirty state was not reflected in the window title.");
+            }
+
+            var settings = new ModbusSettings { MaxCoilAddress = 0 };
+            var coil1 = new MappingEntry(ModbusType.Coil, 1);
+            viewModel.Mappings.Add(coil1);
+            if (viewModel.CountMappingsAboveModbusLimits(settings) == 0)
+            {
+                failures.Add("Mapping deletion warning count did not detect out-of-range entries.");
+            }
+
+            var csvPath = Path.Combine(Path.GetTempPath(), $"gateway-smoke-{Guid.NewGuid():N}.csv");
+            try
+            {
+                File.WriteAllText(csvPath, "Name,Data Type,Address\r\nA,,Holding Reg 0\r\n");
+                var preview = new CsvImportService().Preview(csvPath, [], 100);
+                if (preview.Count != 1 || preview[0].Action != CsvImportAction.Skip || preview[0].Reason != "DataType 未設定")
+                {
+                    failures.Add("Empty register DataType was not skipped with an explicit reason.");
+                }
+            }
+            finally
+            {
+                File.Delete(csvPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            failures.Add($"TODO fixes smoke failed: {ex.GetType().Name}: {ex.Message}");
         }
     }
 

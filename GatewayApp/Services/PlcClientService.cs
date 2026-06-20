@@ -109,7 +109,7 @@ public sealed class PlcClientService : IAsyncDisposable
                 return;
             }
 
-            await _slmp.WriteTypedAsync(entry.PlcAddress, GetSlmpWriteDType(entry), ConvertRawForWrite(entry, rawValue), cancellationToken)
+            await _slmp.WriteTypedAsync(entry.PlcAddress, GetPlcDType(entry), ConvertRawForWrite(entry, rawValue), cancellationToken)
                 .ConfigureAwait(false);
             return;
         }
@@ -139,11 +139,6 @@ public sealed class PlcClientService : IAsyncDisposable
     }
 
     private static string GetPlcDType(MappingEntry entry)
-    {
-        return entry.IsBool ? "BIT" : "S";
-    }
-
-    private static string GetSlmpWriteDType(MappingEntry entry)
     {
         return entry.IsBool ? "BIT" : "S";
     }

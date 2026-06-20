@@ -20,6 +20,8 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
     private readonly DispatcherTimer _pollTimer;
     private bool _pollInFlight;
+    private bool _suppressDirty;
+    private bool _gatewayLogFailureReported;
 
     [ObservableProperty]
     private PlcSettings _plc = new();
@@ -54,6 +56,9 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     [ObservableProperty]
     private string _currentSettingsPath = string.Empty;
 
+    [ObservableProperty]
+    private bool _isDirty;
+
     public MainViewModel()
     {
         _gatewayService.WarningReported += ReportError;
@@ -81,11 +86,24 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     public string ClockText => Clock.ToString("HH:mm:ss", CultureInfo.CurrentCulture);
 
+    public string WindowTitle
+    {
+        get
+        {
+            var settingsText = string.IsNullOrWhiteSpace(CurrentSettingsPath)
+                ? "未保存設定"
+                : CurrentSettingsPath;
+            return $"Factory I/O Gateway - {settingsText}{(IsDirty ? " *" : string.Empty)}";
+        }
+    }
+
     public string StartStopText => IsRunning ? "■ 停止" : "▶ 起動";
 
     public string ForceXText => IsForceXEnabled ? "FORCE X ON" : "FORCE X";
 
     public string ForceYText => IsForceYEnabled ? "FORCE Y ON" : "FORCE Y";
+
+    public string ModbusClientText => $"Modbus Clients: {_gatewayService.ModbusClientCount}";
 
     public string DefaultSettingsPath => _settingsService.SettingsPath;
 
@@ -155,6 +173,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         }
 
         _settingsService.Save(CurrentSettingsPath, BuildSettings());
+        IsDirty = false;
         SetStatus($"設定を上書き保存しました: {CurrentSettingsPath}");
     }
 
@@ -162,6 +181,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     {
         _settingsService.Save(path, BuildSettings());
         CurrentSettingsPath = path;
+        IsDirty = false;
         SetStatus($"設定を保存しました: {path}");
     }
 
@@ -176,6 +196,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         var settings = _settingsService.Load(path);
         ApplySettings(settings);
         CurrentSettingsPath = path;
+        IsDirty = false;
         SetStatus($"設定を読み込みました: {path}");
     }
 
@@ -219,6 +240,10 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         SyncMappingsToModbusAddressLimits();
         SortMappings();
         RebuildMonitorRows();
+        if (result.Added > 0 || result.Updated > 0)
+        {
+            MarkDirty();
+        }
         SetStatus($"CSV インポート: 追加 {result.Added} / 更新 {result.Updated} / スキップ {result.Skipped}");
     }
 
@@ -231,6 +256,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
 
         Plc = settings.Clone();
         _pollTimer.Interval = TimeSpan.FromMilliseconds(Math.Max(10, Plc.PollingMs));
+        MarkDirty();
     }
 
     public void ApplyModbusSettings(ModbusSettings settings)
@@ -248,6 +274,15 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
             entry.RealScale = Modbus.RealScale;
         }
         RebuildMonitorRows();
+        MarkDirty();
+    }
+
+    public int CountMappingsAboveModbusLimits(ModbusSettings settings)
+    {
+        return CountMappingsAboveLimit(ModbusType.Coil, settings.MaxCoilAddress)
+            + CountMappingsAboveLimit(ModbusType.DiscreteInput, settings.MaxDiscreteInputAddress)
+            + CountMappingsAboveLimit(ModbusType.HoldingRegister, settings.MaxHoldingRegisterAddress)
+            + CountMappingsAboveLimit(ModbusType.InputRegister, settings.MaxInputRegisterAddress);
     }
 
     public void ApplyBulkAssign(ModbusType modbusType, string prefix, string startNumberText, int increment)
@@ -269,6 +304,11 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         for (var index = 0; index < entries.Count; index++)
         {
             entries[index].PlcAddress = addresses[index];
+        }
+
+        if (entries.Count > 0)
+        {
+            MarkDirty();
         }
     }
 
@@ -359,11 +399,22 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     partial void OnClockChanged(DateTime value)
     {
         OnPropertyChanged(nameof(ClockText));
+        OnPropertyChanged(nameof(ModbusClientText));
     }
 
     partial void OnIsRunningChanged(bool value)
     {
         OnPropertyChanged(nameof(StartStopText));
+    }
+
+    partial void OnCurrentSettingsPathChanged(string value)
+    {
+        OnPropertyChanged(nameof(WindowTitle));
+    }
+
+    partial void OnIsDirtyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(WindowTitle));
     }
 
     partial void OnIsForceXEnabledChanged(bool value)
@@ -532,8 +583,17 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
             RotateGatewayLogIfNeeded(path);
             File.AppendAllText(path, $"{DateTime.Now:yyyy-MM-dd} {entry.FullText}{Environment.NewLine}");
         }
-        catch
+        catch (Exception ex)
         {
+            if (_gatewayLogFailureReported)
+            {
+                return;
+            }
+
+            _gatewayLogFailureReported = true;
+            var message = $"ログファイル書き込み失敗: {ex.Message}";
+            LastError = message;
+            ErrorLogs.Add(new LogEntry(message));
         }
     }
 
@@ -543,6 +603,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         {
             Directory.CreateDirectory(DefaultSettingsDirectory);
             File.WriteAllText(Path.Combine(DefaultSettingsDirectory, "gateway.log"), string.Empty);
+            _gatewayLogFailureReported = false;
         }
         catch
         {
@@ -569,31 +630,40 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     private void ApplySettings(AppSettings? settings)
     {
-        Plc = settings?.Plc?.Clone() ?? new PlcSettings();
-        Modbus = settings?.Modbus?.Clone() ?? new ModbusSettings();
-        Modbus.RealScale = Math.Max(1, settings?.RealScale ?? Modbus.RealScale);
-
-        Mappings.Clear();
-        var savedMappings = settings?.Mappings;
-        if (savedMappings is { Count: > 0 })
+        _suppressDirty = true;
+        try
         {
-            foreach (var mapping in savedMappings)
+            Plc = settings?.Plc?.Clone() ?? new PlcSettings();
+            Modbus = settings?.Modbus?.Clone() ?? new ModbusSettings();
+            Modbus.RealScale = Math.Max(1, settings?.RealScale ?? Modbus.RealScale);
+
+            Mappings.Clear();
+            var savedMappings = settings?.Mappings;
+            if (savedMappings is { Count: > 0 })
             {
-                Mappings.Add(MappingEntry.FromSettings(mapping, Modbus.RealScale));
+                foreach (var mapping in savedMappings)
+                {
+                    Mappings.Add(MappingEntry.FromSettings(mapping, Modbus.RealScale));
+                }
             }
+
+            InferMissingModbusMaxAddressesFromMappings();
+            SyncMappingsToModbusAddressLimits();
+            SortMappings();
+
+            foreach (var entry in Mappings)
+            {
+                entry.ForceEnabled = IsForceActiveFor(entry);
+            }
+
+            _pollTimer.Interval = TimeSpan.FromMilliseconds(Math.Max(10, Plc.PollingMs));
+            RebuildMonitorRows();
+            IsDirty = false;
         }
-
-        InferMissingModbusMaxAddressesFromMappings();
-        SyncMappingsToModbusAddressLimits();
-        SortMappings();
-
-        foreach (var entry in Mappings)
+        finally
         {
-            entry.ForceEnabled = IsForceActiveFor(entry);
+            _suppressDirty = false;
         }
-
-        _pollTimer.Interval = TimeSpan.FromMilliseconds(Math.Max(10, Plc.PollingMs));
-        RebuildMonitorRows();
     }
 
     private AppSettings BuildSettings()
@@ -626,10 +696,19 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
                 entry.PropertyChanged -= OnMappingPropertyChanged;
             }
         }
+
+        MarkDirty();
     }
 
     private void OnMappingPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName is nameof(MappingEntry.PlcAddress)
+            or nameof(MappingEntry.DisplayType)
+            or nameof(MappingEntry.Comment))
+        {
+            MarkDirty();
+        }
+
         if (e.PropertyName is nameof(MappingEntry.DisplayType))
         {
             RebuildMonitorRows();
@@ -639,6 +718,11 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     private void SortMappings()
     {
         var sorted = Mappings.OrderBy(x => x.ModbusType).ThenBy(x => x.ModbusAddress).ToList();
+        if (Mappings.SequenceEqual(sorted))
+        {
+            return;
+        }
+
         Mappings.Clear();
         foreach (var item in sorted)
         {
@@ -714,6 +798,13 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
             .ToList();
 
         return addresses.Count == 0 ? null : addresses.Max();
+    }
+
+    private int CountMappingsAboveLimit(ModbusType modbusType, int? maxAddress)
+    {
+        return maxAddress.HasValue
+            ? Mappings.Count(x => x.ModbusType == modbusType && x.ModbusAddress > maxAddress.Value)
+            : 0;
     }
 
     private static int? MaxNullable(int? left, int? right)
@@ -795,5 +886,13 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
 
         raw = unchecked((ushort)(short)value);
         return true;
+    }
+
+    private void MarkDirty()
+    {
+        if (!_suppressDirty)
+        {
+            IsDirty = true;
+        }
     }
 }

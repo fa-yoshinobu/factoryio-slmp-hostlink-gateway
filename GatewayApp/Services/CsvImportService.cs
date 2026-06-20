@@ -164,6 +164,12 @@ public sealed class CsvImportService
     {
         var text = value.Trim();
         error = string.Empty;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            displayType = MappingEntry.IsRegisterType(modbusType) ? DisplayType.Int16 : DisplayType.Bool;
+            error = "DataType 未設定";
+            return false;
+        }
 
         if (!MappingEntry.IsRegisterType(modbusType))
         {

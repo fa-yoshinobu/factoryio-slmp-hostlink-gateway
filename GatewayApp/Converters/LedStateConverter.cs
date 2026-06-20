@@ -14,6 +14,7 @@ public sealed class LedStateConverter : IValueConverter
             {
                 LedState.On => new SolidColorBrush(Color.FromRgb(0x3e, 0xdc, 0x3e)),
                 LedState.ForceOn => new SolidColorBrush(Color.FromRgb(0xff, 0x8c, 0x00)),
+                LedState.ForceOff => new SolidColorBrush(Color.FromRgb(0x5a, 0x3a, 0x00)),
                 LedState.Error => new SolidColorBrush(Color.FromRgb(0xdd, 0x44, 0x44)),
                 _ => new SolidColorBrush(Color.FromRgb(0x25, 0x25, 0x25)),
             }
@@ -53,4 +54,3 @@ public sealed class LedStrokeThicknessConverter : IValueConverter
         throw new NotSupportedException();
     }
 }
-
