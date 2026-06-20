@@ -10,6 +10,13 @@ public sealed class EntryValueBrushConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
+        if (value is bool isForceApplied)
+        {
+            return isForceApplied
+                ? new SolidColorBrush(Color.FromRgb(0xff, 0x8c, 0x00))
+                : new SolidColorBrush(Color.FromRgb(0x4e, 0xe0, 0x72));
+        }
+
         if (value is not MappingEntry entry)
         {
             return new SolidColorBrush(Color.FromRgb(0xff, 0xff, 0xff));

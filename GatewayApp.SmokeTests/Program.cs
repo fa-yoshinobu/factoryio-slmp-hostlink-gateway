@@ -1,11 +1,14 @@
 using GatewayApp;
+using GatewayApp.Converters;
 using GatewayApp.Models;
 using GatewayApp.Services;
 using GatewayApp.ViewModels;
 using GatewayApp.Views.Dialogs;
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace GatewayApp.SmokeTests;
@@ -35,6 +38,7 @@ internal static class Program
                 SmokeErrorLogBinding(window, viewModel, failures);
                 SmokeRegisterForceInput(viewModel, failures);
                 SmokeScaledRawFormatting(failures);
+                SmokeValueBrushConverter(failures);
                 SmokeLogWindow(viewModel, failures);
                 SmokeModbusStartStop(failures);
             }
@@ -107,21 +111,21 @@ internal static class Program
                 x.ModbusType == ModbusType.InputRegister && x.ModbusAddress == 0);
             input.RawValue = 125;
 
-            viewModel.ToggleForce();
+            viewModel.ToggleForceX();
 
             if (holding.ForceValue != 321)
             {
-                failures.Add($"Force enable did not inherit holding register value. Expected 321, got {holding.ForceValue}.");
+                failures.Add($"Force X enable did not inherit holding register value. Expected 321, got {holding.ForceValue}.");
             }
 
-            if (input.ForceValue != 125)
+            if (input.ForceEnabled || input.ForceValue.HasValue)
             {
-                failures.Add($"Force enable did not inherit input register value. Expected 125, got {input.ForceValue}.");
+                failures.Add($"Force X affected input register. Enabled={input.ForceEnabled}, value={input.ForceValue}.");
             }
 
             if (coil.ForceValue != 0)
             {
-                failures.Add($"Force enable did not inherit coil value. Expected 0, got {coil.ForceValue}.");
+                failures.Add($"Force X enable did not inherit coil value. Expected 0, got {coil.ForceValue}.");
             }
 
             viewModel.CycleBoolForceAsync(coil).GetAwaiter().GetResult();
@@ -146,6 +150,21 @@ internal static class Program
             if (holding.ForceValue != 1234)
             {
                 failures.Add($"Holding register force value mismatch. Expected 1234, got {holding.ForceValue}.");
+            }
+
+            viewModel.BeginRegisterEdit(input);
+
+            if (input.IsForceEditing)
+            {
+                failures.Add("Input register editing started while Force Y was disabled.");
+                input.IsForceEditing = false;
+            }
+
+            viewModel.ToggleForceY();
+
+            if (input.ForceValue != 125)
+            {
+                failures.Add($"Force Y enable did not inherit input register value. Expected 125, got {input.ForceValue}.");
             }
 
             input.DisplayType = DisplayType.ScaledReal;
@@ -286,9 +305,31 @@ internal static class Program
         }
     }
 
+    private static void SmokeValueBrushConverter(List<string> failures)
+    {
+        try
+        {
+            var converter = new EntryValueBrushConverter();
+            AssertBrush(Color.FromRgb(0x4e, 0xe0, 0x72), converter.Convert(false, typeof(Brush), string.Empty, CultureInfo.InvariantCulture), failures, "Normal value brush");
+            AssertBrush(Color.FromRgb(0xff, 0x8c, 0x00), converter.Convert(true, typeof(Brush), string.Empty, CultureInfo.InvariantCulture), failures, "Force value brush");
+        }
+        catch (Exception ex)
+        {
+            failures.Add($"Value brush smoke failed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
     private static void AssertEqual(string expected, string actual, List<string> failures, string label)
     {
         if (!string.Equals(expected, actual, StringComparison.Ordinal))
+        {
+            failures.Add($"{label}: expected '{expected}', got '{actual}'.");
+        }
+    }
+
+    private static void AssertBrush(Color expected, object actual, List<string> failures, string label)
+    {
+        if (actual is not SolidColorBrush brush || brush.Color != expected)
         {
             failures.Add($"{label}: expected '{expected}', got '{actual}'.");
         }

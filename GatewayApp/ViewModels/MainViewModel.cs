@@ -31,7 +31,10 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     private bool _isRunning;
 
     [ObservableProperty]
-    private bool _isForceEnabled;
+    private bool _isForceXEnabled;
+
+    [ObservableProperty]
+    private bool _isForceYEnabled;
 
     [ObservableProperty]
     private string _gatewayStatus = "停止中";
@@ -80,7 +83,9 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     public string StartStopText => IsRunning ? "■ 停止" : "▶ 起動";
 
-    public string ForceText => IsForceEnabled ? "FORCE ON" : "FORCE";
+    public string ForceXText => IsForceXEnabled ? "FORCE X ON" : "FORCE X";
+
+    public string ForceYText => IsForceYEnabled ? "FORCE Y ON" : "FORCE Y";
 
     public string DefaultSettingsPath => _settingsService.SettingsPath;
 
@@ -130,9 +135,15 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     }
 
     [RelayCommand]
-    public void ToggleForce()
+    public void ToggleForceX()
     {
-        IsForceEnabled = !IsForceEnabled;
+        IsForceXEnabled = !IsForceXEnabled;
+    }
+
+    [RelayCommand]
+    public void ToggleForceY()
+    {
+        IsForceYEnabled = !IsForceYEnabled;
     }
 
     [RelayCommand]
@@ -171,7 +182,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     [RelayCommand]
     public async Task CycleBoolForceAsync(MappingEntry? entry)
     {
-        if (entry is null || entry.IsRegister || !IsForceEnabled)
+        if (entry is null || entry.IsRegister || !IsForceActiveFor(entry))
         {
             return;
         }
@@ -251,7 +262,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     public void BeginRegisterEdit(MappingEntry? entry)
     {
-        if (entry is null || !entry.IsRegister || !IsForceEnabled)
+        if (entry is null || !entry.IsRegister || !IsForceActiveFor(entry))
         {
             return;
         }
@@ -343,20 +354,45 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         OnPropertyChanged(nameof(StartStopText));
     }
 
-    partial void OnIsForceEnabledChanged(bool value)
+    partial void OnIsForceXEnabledChanged(bool value)
     {
-        foreach (var entry in Mappings)
+        ApplyForceState(DataDirection.ToPlc, value);
+        OnPropertyChanged(nameof(ForceXText));
+    }
+
+    partial void OnIsForceYEnabledChanged(bool value)
+    {
+        ApplyForceState(DataDirection.FromPlc, value);
+        OnPropertyChanged(nameof(ForceYText));
+    }
+
+    private void ApplyForceState(DataDirection direction, bool enabled)
+    {
+        foreach (var entry in Mappings.Where(x => x.Direction == direction))
         {
-            if (value)
+            if (enabled)
             {
                 entry.ForceValue = entry.RawValue;
                 entry.IsForceEditing = false;
             }
 
-            entry.ForceEnabled = value;
+            entry.ForceEnabled = enabled;
         }
+    }
 
-        OnPropertyChanged(nameof(ForceText));
+    private bool IsForceActiveFor(MappingEntry entry)
+    {
+        return IsForceActiveForDirection(entry.Direction);
+    }
+
+    private bool IsForceActiveForType(ModbusType modbusType)
+    {
+        return IsForceActiveForDirection(MappingEntry.GetDefaultDirection(modbusType));
+    }
+
+    private bool IsForceActiveForDirection(DataDirection direction)
+    {
+        return direction == DataDirection.ToPlc ? IsForceXEnabled : IsForceYEnabled;
     }
 
     private static int NormalizeBoolRaw(int rawValue)
@@ -541,7 +577,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
 
         foreach (var entry in Mappings)
         {
-            entry.ForceEnabled = IsForceEnabled;
+            entry.ForceEnabled = IsForceActiveFor(entry);
         }
 
         _pollTimer.Interval = TimeSpan.FromMilliseconds(Math.Max(10, Plc.PollingMs));
@@ -566,7 +602,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
             foreach (MappingEntry entry in e.NewItems)
             {
                 entry.RealScale = Modbus.RealScale;
-                entry.ForceEnabled = IsForceEnabled;
+                entry.ForceEnabled = IsForceActiveFor(entry);
                 entry.PropertyChanged += OnMappingPropertyChanged;
             }
         }
@@ -653,7 +689,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
             Mappings.Add(new MappingEntry(modbusType, address)
             {
                 RealScale = Modbus.RealScale,
-                ForceEnabled = IsForceEnabled,
+                ForceEnabled = IsForceActiveForType(modbusType),
             });
         }
     }

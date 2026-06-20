@@ -117,27 +117,47 @@
                     Padding="12,2"
                     Margin="0,0,10,0"
                     VerticalAlignment="Center" />
-            <ToggleButton Grid.Column="2"
-                          Content="{Binding ForceText}"
-                          Command="{Binding ToggleForceCommand}"
-                          IsChecked="{Binding IsForceEnabled, Mode=OneWay}"
-                          Padding="12,2"
-                          VerticalAlignment="Center">
-                <ToggleButton.Style>
-                    <Style TargetType="ToggleButton">
-                        <Setter Property="Foreground" Value="#777" />
-                        <Setter Property="Background" Value="#2a2a2a" />
-                        <Setter Property="BorderBrush" Value="#555" />
-                        <Setter Property="FontWeight" Value="Bold" />
-                        <Style.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter Property="Foreground" Value="#ff8c00" />
-                                <Setter Property="BorderBrush" Value="#ff8c00" />
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </ToggleButton.Style>
-            </ToggleButton>
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                <ToggleButton Content="{Binding ForceXText}"
+                              Command="{Binding ToggleForceXCommand}"
+                              IsChecked="{Binding IsForceXEnabled, Mode=OneWay}"
+                              Padding="12,2"
+                              Margin="0,0,6,0">
+                    <ToggleButton.Style>
+                        <Style TargetType="ToggleButton">
+                            <Setter Property="Foreground" Value="#777" />
+                            <Setter Property="Background" Value="#2a2a2a" />
+                            <Setter Property="BorderBrush" Value="#555" />
+                            <Setter Property="FontWeight" Value="Bold" />
+                            <Style.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter Property="Foreground" Value="#ff8c00" />
+                                    <Setter Property="BorderBrush" Value="#ff8c00" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ToggleButton.Style>
+                </ToggleButton>
+                <ToggleButton Content="{Binding ForceYText}"
+                              Command="{Binding ToggleForceYCommand}"
+                              IsChecked="{Binding IsForceYEnabled, Mode=OneWay}"
+                              Padding="12,2">
+                    <ToggleButton.Style>
+                        <Style TargetType="ToggleButton">
+                            <Setter Property="Foreground" Value="#777" />
+                            <Setter Property="Background" Value="#2a2a2a" />
+                            <Setter Property="BorderBrush" Value="#555" />
+                            <Setter Property="FontWeight" Value="Bold" />
+                            <Style.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter Property="Foreground" Value="#ff8c00" />
+                                    <Setter Property="BorderBrush" Value="#ff8c00" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ToggleButton.Style>
+                </ToggleButton>
+            </StackPanel>
         </Grid>
 
         <StatusBar DockPanel.Dock="Bottom" Background="#222" Foreground="#b0b0b0">
@@ -277,7 +297,7 @@
                                             <Button Content="{Binding Left.DisplayValue}"
                                                     Tag="{Binding Left}"
                                                     Style="{StaticResource MonitorValueButton}"
-                                                    Foreground="{Binding Left, Converter={StaticResource EntryValueBrushConverter}}"
+                                                    Foreground="{Binding Left.IsForceApplied, Converter={StaticResource EntryValueBrushConverter}}"
                                                     ToolTip="{Binding Left.RegisterIntegerToolTip}"
                                                     Visibility="{Binding Left.IsForceEditing, Converter={StaticResource BoolVisibilityConverter}, ConverterParameter=Invert}"
                                                     Click="RegisterValue_Click" />
@@ -300,7 +320,7 @@
                                             <Button Content="{Binding Right.DisplayValue}"
                                                     Tag="{Binding Right}"
                                                     Style="{StaticResource MonitorValueButton}"
-                                                    Foreground="{Binding Right, Converter={StaticResource EntryValueBrushConverter}}"
+                                                    Foreground="{Binding Right.IsForceApplied, Converter={StaticResource EntryValueBrushConverter}}"
                                                     ToolTip="{Binding Right.RegisterIntegerToolTip}"
                                                     Visibility="{Binding Right.IsForceEditing, Converter={StaticResource BoolVisibilityConverter}, ConverterParameter=Invert}"
                                                     Click="RegisterValue_Click" />
