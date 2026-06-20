@@ -4,6 +4,7 @@
         xmlns:conv="clr-namespace:GatewayApp.Converters"
         xmlns:models="clr-namespace:GatewayApp.Models"
         Title="{Binding WindowTitle}"
+        Icon="Assets/AppIcon.ico"
         Width="1120"
         Height="760"
         MinWidth="900"

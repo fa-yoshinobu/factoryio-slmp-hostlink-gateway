@@ -31,6 +31,11 @@ internal static class Program
             window.Show();
             window.UpdateLayout();
 
+            if (window.Icon is null)
+            {
+                failures.Add("MainWindow icon was not loaded.");
+            }
+
             if (window.DataContext is not MainViewModel viewModel)
             {
                 failures.Add("MainWindow DataContext is not MainViewModel.");
@@ -48,6 +53,7 @@ internal static class Program
                 SmokeLogWindow(viewModel, failures);
                 SmokeAboutWindow(failures);
                 SmokeModbusStartStop(failures);
+                SmokeMainWindowClosesWhenDisconnected(failures);
             }
         }
         catch (Exception ex)
@@ -244,6 +250,38 @@ internal static class Program
         catch (Exception ex)
         {
             failures.Add($"Modbus start/stop smoke failed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private static void SmokeMainWindowClosesWhenDisconnected(List<string> failures)
+    {
+        MainWindow? closeWindow = null;
+        try
+        {
+            closeWindow = new MainWindow();
+            closeWindow.Show();
+            closeWindow.UpdateLayout();
+
+            if (closeWindow.DataContext is MainViewModel viewModel)
+            {
+                viewModel.IsDirty = false;
+            }
+
+            closeWindow.Close();
+            PumpDispatcher();
+
+            if (closeWindow.IsVisible)
+            {
+                failures.Add("MainWindow remained visible after Close() while disconnected.");
+            }
+        }
+        catch (Exception ex)
+        {
+            failures.Add($"MainWindow close smoke failed: {ex.GetType().Name}: {ex.Message}");
+        }
+        finally
+        {
+            closeWindow?.Close();
         }
     }
 

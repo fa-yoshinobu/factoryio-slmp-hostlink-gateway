@@ -14,7 +14,7 @@ namespace GatewayApp;
 public partial class MainWindow : Window
 {
     private LogWindow? _logWindow;
-    private bool _closingAfterCleanup;
+    private bool _cleanupStarted;
 
     private MainViewModel ViewModel => (MainViewModel)DataContext;
 
@@ -326,13 +326,8 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void Window_Closing(object? sender, CancelEventArgs e)
+    private void Window_Closing(object? sender, CancelEventArgs e)
     {
-        if (_closingAfterCleanup)
-        {
-            return;
-        }
-
         if (ViewModel.IsDirty)
         {
             var result = MessageBox.Show(
@@ -349,19 +344,21 @@ public partial class MainWindow : Window
             }
         }
 
-        e.Cancel = true;
-        _closingAfterCleanup = true;
         _logWindow?.Close();
+        StartCleanupAfterClose();
+    }
 
-        try
+    private void StartCleanupAfterClose()
+    {
+        if (_cleanupStarted)
         {
-            await ViewModel.DisposeAsync();
-        }
-        catch (Exception ex)
-        {
-            ViewModel.ReportException(ex);
+            return;
         }
 
-        Close();
+        _cleanupStarted = true;
+        var disposeTask = ViewModel.DisposeAsync().AsTask();
+        _ = disposeTask.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted);
     }
 }
