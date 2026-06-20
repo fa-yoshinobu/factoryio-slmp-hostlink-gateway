@@ -1,0 +1,140 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="LanguageEnglish">English</sys:String>
+    <sys:String x:Key="LanguageJapanese">Japanese</sys:String>
+
+    <sys:String x:Key="MenuFile">File</sys:String>
+    <sys:String x:Key="MenuImportCsv">Factory I/O Tag CSV Import</sys:String>
+    <sys:String x:Key="MenuLoadSettings">Load Settings...</sys:String>
+    <sys:String x:Key="MenuSave">Save</sys:String>
+    <sys:String x:Key="MenuSaveAs">Save As...</sys:String>
+    <sys:String x:Key="MenuExit">Exit</sys:String>
+    <sys:String x:Key="MenuCommunication">Communication</sys:String>
+    <sys:String x:Key="MenuPlcSettings">PLC Communication Settings</sys:String>
+    <sys:String x:Key="MenuModbusSettings">Modbus Communication Settings</sys:String>
+    <sys:String x:Key="MenuTools">Tools</sys:String>
+    <sys:String x:Key="MenuBulkAssign">Bulk Assign PLC Addresses</sys:String>
+    <sys:String x:Key="MenuShowLog">Show Log</sys:String>
+    <sys:String x:Key="MenuLanguage">Language</sys:String>
+    <sys:String x:Key="MenuHelp">Help</sys:String>
+    <sys:String x:Key="MenuAbout">About</sys:String>
+
+    <sys:String x:Key="CommonCancel">Cancel</sys:String>
+    <sys:String x:Key="CommonApply">Apply</sys:String>
+    <sys:String x:Key="CommonSave">Save</sys:String>
+    <sys:String x:Key="CommonClose">Close</sys:String>
+    <sys:String x:Key="CommonCopy">Copy</sys:String>
+    <sys:String x:Key="CommonCopyAll">Copy All</sys:String>
+    <sys:String x:Key="CommonClearLog">Clear Log</sys:String>
+
+    <sys:String x:Key="PlcSettingsTitle">PLC Communication Settings</sys:String>
+    <sys:String x:Key="ModbusSettingsTitle">Modbus Communication Settings</sys:String>
+    <sys:String x:Key="BulkAssignTitle">Bulk Assign PLC Addresses</sys:String>
+    <sys:String x:Key="CsvPreviewTitle">CSV Import Preview</sys:String>
+    <sys:String x:Key="LogTitle">Log</sys:String>
+    <sys:String x:Key="AboutTitle">About</sys:String>
+
+    <sys:String x:Key="RunningCannotChange">Settings cannot be changed while running.</sys:String>
+    <sys:String x:Key="ReadOnlyRunning">Read-only while running.</sys:String>
+
+    <sys:String x:Key="Protocol">Protocol</sys:String>
+    <sys:String x:Key="Host">Host</sys:String>
+    <sys:String x:Key="Transport">Transport</sys:String>
+    <sys:String x:Key="Port">Port</sys:String>
+    <sys:String x:Key="TimeoutSec">Timeout (sec)</sys:String>
+    <sys:String x:Key="PollingMs">Polling (ms)</sys:String>
+    <sys:String x:Key="Machine">Model</sys:String>
+    <sys:String x:Key="ListenIp">Listen IP</sys:String>
+    <sys:String x:Key="UnitId">Unit ID</sys:String>
+    <sys:String x:Key="MaxAddressCoil">Coil Max Address</sys:String>
+    <sys:String x:Key="MaxAddressDi">DI Max Address</sys:String>
+    <sys:String x:Key="MaxAddressHr">HR Max Address</sys:String>
+    <sys:String x:Key="MaxAddressIr">IR Max Address</sys:String>
+
+    <sys:String x:Key="TargetModbusType">Target Modbus Type</sys:String>
+    <sys:String x:Key="PlcDevice">PLC Device</sys:String>
+    <sys:String x:Key="StartNumber">Start Number</sys:String>
+
+    <sys:String x:Key="ColumnModbusType">Modbus Type</sys:String>
+    <sys:String x:Key="ColumnModbusAddress">Modbus Address</sys:String>
+    <sys:String x:Key="ColumnPlcAddress">PLC Address</sys:String>
+    <sys:String x:Key="ColumnDisplayType">Display Type</sys:String>
+    <sys:String x:Key="ColumnComment">Comment</sys:String>
+    <sys:String x:Key="ColumnAction">Action</sys:String>
+    <sys:String x:Key="ColumnName">Name</sys:String>
+    <sys:String x:Key="ColumnExistingPlc">Existing PLC</sys:String>
+    <sys:String x:Key="ColumnReason">Reason</sys:String>
+
+    <sys:String x:Key="UnsavedSettings">Unsaved settings</sys:String>
+    <sys:String x:Key="GatewayStopped">Stopped</sys:String>
+    <sys:String x:Key="GatewayRunning">Running</sys:String>
+    <sys:String x:Key="GatewayStopping">Stopping</sys:String>
+    <sys:String x:Key="GatewayStoppedByError">Stopped by communication error</sys:String>
+    <sys:String x:Key="ModbusTcpStopped">Modbus TCP stopped</sys:String>
+    <sys:String x:Key="ModbusTcpStopping">Modbus TCP stopping</sys:String>
+    <sys:String x:Key="ModbusTcpWaiting">Modbus TCP waiting {0}:{1}</sys:String>
+    <sys:String x:Key="PlcDisconnected">PLC disconnected</sys:String>
+    <sys:String x:Key="PlcDisconnecting">PLC disconnecting</sys:String>
+    <sys:String x:Key="PlcConnected">PLC connected</sys:String>
+    <sys:String x:Key="StartButton">▶ Start</sys:String>
+    <sys:String x:Key="StopButton">■ Stop</sys:String>
+
+    <sys:String x:Key="ActionAdd">Add</sys:String>
+    <sys:String x:Key="ActionUpdate">Update</sys:String>
+    <sys:String x:Key="ActionSkip">Skip</sys:String>
+    <sys:String x:Key="ForceNone">No force</sys:String>
+    <sys:String x:Key="ForceValue">Force {0}</sys:String>
+    <sys:String x:Key="ForceOn">Force ON</sys:String>
+    <sys:String x:Key="ForceOff">Force OFF</sys:String>
+    <sys:String x:Key="CsvPreviewSummary">Add {0} / Update {1} / Skip {2}</sys:String>
+
+    <sys:String x:Key="SettingsSaveOverwriteCaption">Save</sys:String>
+    <sys:String x:Key="SettingsLoadCaption">Load Settings</sys:String>
+    <sys:String x:Key="SettingsSaveCaption">Save Settings</sys:String>
+    <sys:String x:Key="CsvImportCaption">CSV Import</sys:String>
+    <sys:String x:Key="ExitCaption">Exit</sys:String>
+    <sys:String x:Key="BulkAssignCaption">Bulk Assign</sys:String>
+
+    <sys:String x:Key="SettingsLoadRunning">Settings cannot be loaded while running. Stop first.</sys:String>
+    <sys:String x:Key="ConfirmDeleteOutOfRangeMappings">Reducing the max address will delete {0} out-of-range mappings. Continue?</sys:String>
+    <sys:String x:Key="ConfirmExitUnsaved">There are unsaved changes. Exit without saving?</sys:String>
+    <sys:String x:Key="SavePathMissing">No settings file path is selected. Use Save As first.</sys:String>
+    <sys:String x:Key="SettingsSavedOverwrite">Settings overwritten: {0}</sys:String>
+    <sys:String x:Key="SettingsSavedAs">Settings saved: {0}</sys:String>
+    <sys:String x:Key="SettingsLoaded">Settings loaded: {0}</sys:String>
+    <sys:String x:Key="CsvImportStatus">CSV import: Add {0} / Update {1} / Skip {2}</sys:String>
+    <sys:String x:Key="LogWriteFailed">Log file write failed: {0}</sys:String>
+
+    <sys:String x:Key="PortRange">Port must be 1 to 65535.</sys:String>
+    <sys:String x:Key="UnitIdRange">Unit ID must be 1 to 247.</sys:String>
+    <sys:String x:Key="ScaleRange">Scale must be 1 or greater.</sys:String>
+    <sys:String x:Key="IntegerRequired">{0} must be an integer.</sys:String>
+    <sys:String x:Key="AddressRange">{0} must be 0 to 65535.</sys:String>
+    <sys:String x:Key="SelectPlcDevice">Select a PLC device.</sys:String>
+    <sys:String x:Key="StartNumberInvalid">{0} start number is invalid.</sys:String>
+    <sys:String x:Key="BitBankRange">{0} last two digits must be 00..15.</sys:String>
+    <sys:String x:Key="PlcAddressOutOfRange">PLC address is out of range.</sys:String>
+
+    <sys:String x:Key="NumericRequired">Enter a number.</sys:String>
+    <sys:String x:Key="IntegerInputRequired">Enter an integer.</sys:String>
+    <sys:String x:Key="Int16Range">Value is outside the Int16 range (-32768..32767).</sys:String>
+    <sys:String x:Key="PlcNotConnected">PLC is not connected.</sys:String>
+    <sys:String x:Key="CommunicationNotRunning">Communication is not running.</sys:String>
+    <sys:String x:Key="PlcAddressMissing">{0} PLC address is not set.</sys:String>
+    <sys:String x:Key="InvalidPlcTransport">Invalid PLC transport: {0}</sys:String>
+    <sys:String x:Key="PlcConnectionFailed">PLC connection failed ({0} {1} {2}:{3}, model={4}, timeout={5} sec). {6}</sys:String>
+    <sys:String x:Key="ResponseTimeout">Response wait was canceled or timed out.</sys:String>
+    <sys:String x:Key="PlcMismatch">{0} -> {1} PLC value mismatch. Sent={2} / PLC={3}</sys:String>
+    <sys:String x:Key="ModbusTcpStartFailed">Modbus TCP failed to start.</sys:String>
+
+    <sys:String x:Key="SettingsPathEmpty">Settings file path is empty.</sys:String>
+    <sys:String x:Key="SettingsContentEmpty">Settings file content is empty.</sys:String>
+    <sys:String x:Key="UnsupportedAddress">Unsupported Address: {0}</sys:String>
+    <sys:String x:Key="DataTypeMissing">DataType is not set.</sys:String>
+    <sys:String x:Key="BoolOnly">Coil/Input supports Bool only.</sys:String>
+    <sys:String x:Key="RegisterTypeOnly">Holding/Input Register supports Int or Float only.</sys:String>
+    <sys:String x:Key="CsvReasonUpdate">Update comment / display type, keep PLC address</sys:String>
+    <sys:String x:Key="CsvReasonNoChange">No changes</sys:String>
+    <sys:String x:Key="CsvReasonNew">New entry</sys:String>
+</ResourceDictionary>

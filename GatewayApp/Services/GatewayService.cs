@@ -75,7 +75,7 @@ public sealed class GatewayService : IAsyncDisposable
 
             if (!_plc.IsConnected)
             {
-                throw new InvalidOperationException("PLC に接続されていません。");
+                throw new InvalidOperationException(Loc.Text("PlcNotConnected"));
             }
 
             foreach (var entry in mappings.Where(x => !string.IsNullOrWhiteSpace(x.PlcAddress)))
@@ -120,7 +120,7 @@ public sealed class GatewayService : IAsyncDisposable
 
             _modbus.WriteRaw(entry, entry.EffectiveRawValue);
             TraceReported?.Invoke(
-                $"FORCE {entry.ModbusLabel} PLC={entry.PlcAddress} 方向={entry.Direction} raw={FormatRaw(entry, entry.EffectiveRawValue)}");
+                $"FORCE {entry.ModbusLabel} PLC={entry.PlcAddress} direction={entry.Direction} raw={FormatRaw(entry, entry.EffectiveRawValue)}");
             TraceReported?.Invoke(
                 $"MODBUS WRITE {entry.ModbusLabel} <= {FormatRaw(entry, entry.EffectiveRawValue)}");
 
@@ -136,12 +136,12 @@ public sealed class GatewayService : IAsyncDisposable
                 if (plcValue.HasValue && !RawMatches(entry, plcValue.Value, entry.EffectiveRawValue))
                 {
                     WarningReported?.Invoke(
-                        $"{entry.ModbusLabel} -> {entry.PlcAddress} のPLC値不一致。送信={FormatRaw(entry, entry.EffectiveRawValue)} / PLC={FormatRaw(entry, plcValue.Value)}");
+                        Loc.Format("PlcMismatch", entry.ModbusLabel, entry.PlcAddress, FormatRaw(entry, entry.EffectiveRawValue), FormatRaw(entry, plcValue.Value)));
                 }
             }
             else
             {
-                throw new InvalidOperationException("PLC に接続されていません。");
+                throw new InvalidOperationException(Loc.Text("PlcNotConnected"));
             }
 
             entry.LastWritten = DateTime.Now;
@@ -243,7 +243,7 @@ public sealed class GatewayService : IAsyncDisposable
     private CancellationToken GetRunToken(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var runCts = _runCts ?? throw new InvalidOperationException("通信が起動していません。");
+        var runCts = _runCts ?? throw new InvalidOperationException(Loc.Text("CommunicationNotRunning"));
         return runCts.Token;
     }
 

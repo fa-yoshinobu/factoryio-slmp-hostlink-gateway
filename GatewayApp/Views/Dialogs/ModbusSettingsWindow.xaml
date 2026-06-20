@@ -1,22 +1,22 @@
 <Window x:Class="GatewayApp.Views.Dialogs.ModbusSettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Modbus通信設定"
+        Title="{DynamicResource ModbusSettingsTitle}"
         Width="430"
         Height="440"
         WindowStartupLocation="CenterOwner">
     <DockPanel Background="#ebebeb">
         <TextBlock x:Name="WarningText"
                    DockPanel.Dock="Top"
-                   Text="稼働中は変更できません"
+                   Text="{DynamicResource RunningCannotChange}"
                    Margin="14,12,14,0"
                    Padding="8,5"
                    Background="#fff3cd"
                    Foreground="#7a5800"
                    Visibility="Collapsed" />
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="14">
-            <Button Content="キャンセル" Width="88" Margin="0,0,8,0" IsCancel="True" />
-            <Button x:Name="SaveButton" Content="保存" Width="88" IsDefault="True" Click="Save_Click" />
+            <Button Content="{DynamicResource CommonCancel}" Width="88" Margin="0,0,8,0" IsCancel="True" />
+            <Button x:Name="SaveButton" Content="{DynamicResource CommonSave}" Width="88" IsDefault="True" Click="Save_Click" />
         </StackPanel>
         <Grid x:Name="FormGrid" Margin="18,14">
             <Grid.RowDefinitions>
@@ -34,28 +34,28 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <TextBlock Grid.Row="0" Grid.Column="0" Text="待受 IP" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource ListenIp}" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ListenIp, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" />
 
-            <TextBlock Grid.Row="1" Grid.Column="0" Text="ポート" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource Port}" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" />
 
-            <TextBlock Grid.Row="2" Grid.Column="0" Text="ユニット ID" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource UnitId}" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding UnitId, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" />
 
             <TextBlock Grid.Row="3" Grid.Column="0" Text="Scale" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding RealScale, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" />
 
-            <TextBlock Grid.Row="4" Grid.Column="0" Text="Coil 最大アドレス" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
+            <TextBlock Grid.Row="4" Grid.Column="0" Text="{DynamicResource MaxAddressCoil}" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <TextBox x:Name="MaxCoilTextBox" Grid.Row="4" Grid.Column="1" Margin="0,0,0,10" />
 
-            <TextBlock Grid.Row="5" Grid.Column="0" Text="DI 最大アドレス" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
+            <TextBlock Grid.Row="5" Grid.Column="0" Text="{DynamicResource MaxAddressDi}" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <TextBox x:Name="MaxDiscreteInputTextBox" Grid.Row="5" Grid.Column="1" Margin="0,0,0,10" />
 
-            <TextBlock Grid.Row="6" Grid.Column="0" Text="HR 最大アドレス" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
+            <TextBlock Grid.Row="6" Grid.Column="0" Text="{DynamicResource MaxAddressHr}" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <TextBox x:Name="MaxHoldingRegisterTextBox" Grid.Row="6" Grid.Column="1" Margin="0,0,0,10" />
 
-            <TextBlock Grid.Row="7" Grid.Column="0" Text="IR 最大アドレス" VerticalAlignment="Center" Margin="0,0,8,0" TextAlignment="Right" />
+            <TextBlock Grid.Row="7" Grid.Column="0" Text="{DynamicResource MaxAddressIr}" VerticalAlignment="Center" Margin="0,0,8,0" TextAlignment="Right" />
             <TextBox x:Name="MaxInputRegisterTextBox" Grid.Row="7" Grid.Column="1" />
         </Grid>
     </DockPanel>

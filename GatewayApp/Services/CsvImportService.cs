@@ -39,7 +39,7 @@ public sealed class CsvImportService
                 {
                     Action = CsvImportAction.Skip,
                     Name = name,
-                    Reason = $"未対応 Address: {address}",
+                    Reason = Loc.Format("UnsupportedAddress", address),
                 });
                 continue;
             }
@@ -78,7 +78,7 @@ public sealed class CsvImportService
                     ExistingPlcAddress = current.PlcAddress,
                     Existing = current,
                     Proposed = proposed,
-                    Reason = changed ? "コメント / 表示型を更新、PLCアドレスは保持" : "変更なし",
+                    Reason = changed ? Loc.Text("CsvReasonUpdate") : Loc.Text("CsvReasonNoChange"),
                 });
             }
             else
@@ -91,7 +91,7 @@ public sealed class CsvImportService
                     ModbusAddress = modbusAddress,
                     DisplayType = displayType,
                     Proposed = proposed,
-                    Reason = "新規追加",
+                    Reason = Loc.Text("CsvReasonNew"),
                 });
             }
         }
@@ -167,7 +167,7 @@ public sealed class CsvImportService
         if (string.IsNullOrWhiteSpace(text))
         {
             displayType = MappingEntry.IsRegisterType(modbusType) ? DisplayType.Int16 : DisplayType.Bool;
-            error = "DataType 未設定";
+            error = Loc.Text("DataTypeMissing");
             return false;
         }
 
@@ -179,7 +179,7 @@ public sealed class CsvImportService
                 return true;
             }
 
-            error = "Coil/Input は Bool のみ対応";
+            error = Loc.Text("BoolOnly");
             return false;
         }
 
@@ -196,7 +196,7 @@ public sealed class CsvImportService
                 return true;
             default:
                 displayType = DisplayType.Int16;
-                error = "Holding/Input Register は Int または Float のみ対応";
+                error = Loc.Text("RegisterTypeOnly");
                 return false;
         }
     }

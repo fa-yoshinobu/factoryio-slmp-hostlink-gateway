@@ -1,4 +1,5 @@
 using GatewayApp.Models;
+using GatewayApp.Services;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -14,7 +15,36 @@ public partial class CsvImportPreviewWindow : Window
         InitializeComponent();
         _items = items;
         PreviewGrid.ItemsSource = _items;
-        SummaryText.Text = $"追加 {_items.Count(x => x.Action == CsvImportAction.Add)} / 更新 {_items.Count(x => x.Action == CsvImportAction.Update)} / スキップ {_items.Count(x => x.Action == CsvImportAction.Skip)}";
+        ApplyLocalizedText();
+        Loc.LanguageChanged += OnLanguageChanged;
+        Closed += (_, _) => Loc.LanguageChanged -= OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        ApplyLocalizedText();
+        PreviewGrid.Items.Refresh();
+    }
+
+    private void ApplyLocalizedText()
+    {
+        SummaryText.Text = Loc.Format(
+            "CsvPreviewSummary",
+            _items.Count(x => x.Action == CsvImportAction.Add),
+            _items.Count(x => x.Action == CsvImportAction.Update),
+            _items.Count(x => x.Action == CsvImportAction.Skip));
+
+        if (PreviewGrid.Columns.Count < 6)
+        {
+            return;
+        }
+
+        PreviewGrid.Columns[0].Header = Loc.Text("ColumnAction");
+        PreviewGrid.Columns[1].Header = "Modbus";
+        PreviewGrid.Columns[2].Header = Loc.Text("ColumnName");
+        PreviewGrid.Columns[3].Header = Loc.Text("ColumnDisplayType");
+        PreviewGrid.Columns[4].Header = Loc.Text("ColumnExistingPlc");
+        PreviewGrid.Columns[5].Header = Loc.Text("ColumnReason");
     }
 
     private void PreviewGrid_LoadingRow(object sender, DataGridRowEventArgs e)

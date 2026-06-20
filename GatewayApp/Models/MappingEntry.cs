@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using GatewayApp.Services;
 using System.Globalization;
 
 namespace GatewayApp.Models;
@@ -162,10 +163,10 @@ public partial class MappingEntry : ObservableObject
     }
 
     public string ForceSummary => ForceValue is null
-        ? "強制なし"
+        ? Loc.Text("ForceNone")
         : IsRegister
-            ? $"強制 {DisplayValue}"
-            : ForceValue.Value != 0 ? "強制 ON" : "強制 OFF";
+            ? Loc.Format("ForceValue", DisplayValue)
+            : ForceValue.Value != 0 ? Loc.Text("ForceOn") : Loc.Text("ForceOff");
 
     public string LastWrittenText => LastWritten?.ToString("HH:mm:ss.fff", CultureInfo.CurrentCulture) ?? string.Empty;
 

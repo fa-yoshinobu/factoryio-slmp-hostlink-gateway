@@ -1,4 +1,5 @@
 using GatewayApp.Models;
+using GatewayApp.Services;
 using GatewayApp.ViewModels;
 using GatewayApp.Views.Dialogs;
 using Microsoft.Win32;
@@ -23,6 +24,8 @@ public partial class MainWindow : Window
         InitializeComponent();
         var viewModel = new MainViewModel();
         DataContext = viewModel;
+        UpdateLanguageMenuChecks();
+        ApplyLocalizedMappingHeaders();
     }
 
     private void ImportCsv_Click(object sender, RoutedEventArgs e)
@@ -30,7 +33,7 @@ public partial class MainWindow : Window
         var dialog = new OpenFileDialog
         {
             Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
-            Title = "Factory I/O タグ CSV インポート",
+            Title = Loc.Text("MenuImportCsv"),
         };
 
         if (dialog.ShowDialog(this) != true)
@@ -53,7 +56,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "CSV インポート", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(this, ex.Message, Loc.Text("CsvImportCaption"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -71,7 +74,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "上書き保存", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(this, ex.Message, Loc.Text("SettingsSaveOverwriteCaption"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -79,14 +82,14 @@ public partial class MainWindow : Window
     {
         if (ViewModel.IsRunning)
         {
-            MessageBox.Show(this, "稼働中は設定を読み込めません。停止してから読み込んでください。", "設定読み込み", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, Loc.Text("SettingsLoadRunning"), Loc.Text("SettingsLoadCaption"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
         var dialog = new OpenFileDialog
         {
             Filter = "Gateway settings (*.json)|*.json|All files (*.*)|*.*",
-            Title = "設定読み込み",
+            Title = Loc.Text("SettingsLoadCaption"),
             InitialDirectory = Directory.Exists(ViewModel.SettingsDialogDirectory) ? ViewModel.SettingsDialogDirectory : Environment.CurrentDirectory,
         };
 
@@ -101,7 +104,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "設定読み込み", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(this, ex.Message, Loc.Text("SettingsLoadCaption"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -110,7 +113,7 @@ public partial class MainWindow : Window
         var dialog = new SaveFileDialog
         {
             Filter = "Gateway settings (*.json)|*.json|All files (*.*)|*.*",
-            Title = "名前を付けて設定保存",
+            Title = Loc.Text("MenuSaveAs"),
             AddExtension = true,
             DefaultExt = ".json",
             FileName = string.IsNullOrWhiteSpace(ViewModel.CurrentSettingsPath) ? "settings.json" : Path.GetFileName(ViewModel.CurrentSettingsPath),
@@ -128,7 +131,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "設定保存", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(this, ex.Message, Loc.Text("SettingsSaveCaption"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -164,8 +167,8 @@ public partial class MainWindow : Window
             {
                 var result = MessageBox.Show(
                     this,
-                    $"最大アドレスを小さくすると、範囲外のマッピング {removeCount} 件が削除されます。続行しますか？",
-                    "Modbus通信設定",
+                    Loc.Format("ConfirmDeleteOutOfRangeMappings", removeCount),
+                    Loc.Text("ModbusSettingsTitle"),
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Warning);
 
@@ -214,6 +217,40 @@ public partial class MainWindow : Window
         {
             Owner = this,
         }.ShowDialog();
+    }
+
+    private void LanguageEnglish_Click(object sender, RoutedEventArgs e)
+    {
+        Loc.SetLanguage(UiLanguage.English);
+        UpdateLanguageMenuChecks();
+        ApplyLocalizedMappingHeaders();
+    }
+
+    private void LanguageJapanese_Click(object sender, RoutedEventArgs e)
+    {
+        Loc.SetLanguage(UiLanguage.Japanese);
+        UpdateLanguageMenuChecks();
+        ApplyLocalizedMappingHeaders();
+    }
+
+    private void UpdateLanguageMenuChecks()
+    {
+        EnglishLanguageMenuItem.IsChecked = Loc.CurrentLanguage == UiLanguage.English;
+        JapaneseLanguageMenuItem.IsChecked = Loc.CurrentLanguage == UiLanguage.Japanese;
+    }
+
+    private void ApplyLocalizedMappingHeaders()
+    {
+        if (MappingGrid.Columns.Count < 5)
+        {
+            return;
+        }
+
+        MappingGrid.Columns[0].Header = Loc.Text("ColumnModbusType");
+        MappingGrid.Columns[1].Header = Loc.Text("ColumnModbusAddress");
+        MappingGrid.Columns[2].Header = Loc.Text("ColumnPlcAddress");
+        MappingGrid.Columns[3].Header = Loc.Text("ColumnDisplayType");
+        MappingGrid.Columns[4].Header = Loc.Text("ColumnComment");
     }
 
     private async void Led_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -332,8 +369,8 @@ public partial class MainWindow : Window
         {
             var result = MessageBox.Show(
                 this,
-                "未保存の変更があります。保存せずに終了しますか？",
-                "終了",
+                Loc.Text("ConfirmExitUnsaved"),
+                Loc.Text("ExitCaption"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 

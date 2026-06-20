@@ -1,22 +1,22 @@
 <Window x:Class="GatewayApp.Views.Dialogs.PlcSettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="PLC通信設定"
+        Title="{DynamicResource PlcSettingsTitle}"
         Width="420"
         Height="420"
         WindowStartupLocation="CenterOwner">
     <DockPanel Background="#ebebeb">
         <TextBlock x:Name="WarningText"
                    DockPanel.Dock="Top"
-                   Text="稼働中は変更できません"
+                   Text="{DynamicResource RunningCannotChange}"
                    Margin="14,12,14,0"
                    Padding="8,5"
                    Background="#fff3cd"
                    Foreground="#7a5800"
                    Visibility="Collapsed" />
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="14">
-            <Button Content="キャンセル" Width="88" Margin="0,0,8,0" IsCancel="True" />
-            <Button x:Name="SaveButton" Content="保存" Width="88" IsDefault="True" Click="Save_Click" />
+            <Button Content="{DynamicResource CommonCancel}" Width="88" Margin="0,0,8,0" IsCancel="True" />
+            <Button x:Name="SaveButton" Content="{DynamicResource CommonSave}" Width="88" IsDefault="True" Click="Save_Click" />
         </StackPanel>
         <Grid x:Name="FormGrid" Margin="18,14">
             <Grid.RowDefinitions>
@@ -34,20 +34,20 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <TextBlock Grid.Row="0" Grid.Column="0" Text="プロトコル" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource Protocol}" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,10">
                 <RadioButton x:Name="SlmpRadio" Content="SLMP" Margin="0,0,18,0" Checked="ProtocolRadio_Checked" />
                 <RadioButton x:Name="HostLinkRadio" Content="Host Link" Checked="ProtocolRadio_Checked" />
             </StackPanel>
 
-            <TextBlock Grid.Row="1" Grid.Column="0" Text="ホスト" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource Host}" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <TextBox x:Name="HostTextBox"
                      Grid.Row="1"
                      Grid.Column="1"
                      Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}"
                      Margin="0,0,0,10" />
 
-            <TextBlock Grid.Row="2" Grid.Column="0" Text="通信方式" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource Transport}" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <ComboBox x:Name="TransportCombo"
                       Grid.Row="2"
                       Grid.Column="1"
@@ -55,20 +55,20 @@
                       SelectedValuePath="Value"
                       Margin="0,0,0,10" />
 
-            <TextBlock Grid.Row="3" Grid.Column="0" Text="ポート" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
+            <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource Port}" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <TextBox x:Name="PortTextBox"
                      Grid.Row="3"
                      Grid.Column="1"
                      Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}"
                      Margin="0,0,0,10" />
 
-            <TextBlock Grid.Row="4" Grid.Column="0" Text="タイムアウト (秒)" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
+            <TextBlock Grid.Row="4" Grid.Column="0" Text="{DynamicResource TimeoutSec}" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding TimeoutSec, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" />
 
-            <TextBlock Grid.Row="5" Grid.Column="0" Text="ポーリング (ms)" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
+            <TextBlock Grid.Row="5" Grid.Column="0" Text="{DynamicResource PollingMs}" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding PollingMs, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" />
 
-            <TextBlock x:Name="ProfileLabel" Grid.Row="6" Grid.Column="0" Text="機種" VerticalAlignment="Center" Margin="0,0,8,0" TextAlignment="Right" />
+            <TextBlock x:Name="ProfileLabel" Grid.Row="6" Grid.Column="0" Text="{DynamicResource Machine}" VerticalAlignment="Center" Margin="0,0,8,0" TextAlignment="Right" />
             <ComboBox x:Name="ProfileCombo"
                       Grid.Row="6"
                       Grid.Column="1"

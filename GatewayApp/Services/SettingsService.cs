@@ -36,12 +36,12 @@ public sealed class SettingsService
     {
         if (string.IsNullOrWhiteSpace(path))
         {
-            throw new ArgumentException("設定ファイルのパスが空です。", nameof(path));
+            throw new ArgumentException(Loc.Text("SettingsPathEmpty"), nameof(path));
         }
 
         var json = File.ReadAllText(path);
         return JsonSerializer.Deserialize<AppSettings>(json, _jsonOptions)
-            ?? throw new InvalidDataException("設定ファイルの内容が空です。");
+            ?? throw new InvalidDataException(Loc.Text("SettingsContentEmpty"));
     }
 
     public void Save(AppSettings settings)
@@ -53,7 +53,7 @@ public sealed class SettingsService
     {
         if (string.IsNullOrWhiteSpace(path))
         {
-            throw new ArgumentException("設定ファイルのパスが空です。", nameof(path));
+            throw new ArgumentException(Loc.Text("SettingsPathEmpty"), nameof(path));
         }
 
         var directory = Path.GetDirectoryName(path);

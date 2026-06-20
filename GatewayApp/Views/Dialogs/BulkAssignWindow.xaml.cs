@@ -44,14 +44,14 @@ public partial class BulkAssignWindow : Window
         PlcPrefix = DeviceCombo.SelectedItem as string ?? string.Empty;
         if (string.IsNullOrWhiteSpace(PlcPrefix))
         {
-            MessageBox.Show(this, "PLC デバイスを選択してください。", "一括割当", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, Loc.Text("SelectPlcDevice"), Loc.Text("BulkAssignCaption"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
         StartNumberText = StartTextBox.Text.Trim();
         if (!PlcAddressSequence.TryFormat(_plc.Protocol, _plc.SlmpProfile, PlcPrefix, StartNumberText, 0, out _, out var startError))
         {
-            MessageBox.Show(this, startError, "一括割当", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, startError, Loc.Text("BulkAssignCaption"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 

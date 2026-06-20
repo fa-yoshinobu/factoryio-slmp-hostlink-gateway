@@ -70,25 +70,35 @@
 
     <DockPanel Background="#484848">
         <Menu DockPanel.Dock="Top" Background="#d8d8d8" Foreground="#1f1f1f">
-            <MenuItem Header="ファイル">
-                <MenuItem Header="Factory I/O タグ CSV インポート" Click="ImportCsv_Click" />
+            <MenuItem Header="{DynamicResource MenuFile}">
+                <MenuItem Header="{DynamicResource MenuImportCsv}" Click="ImportCsv_Click" />
                 <Separator />
-                <MenuItem Header="設定読み込み..." Click="LoadSettings_Click" />
-                <MenuItem Header="上書き保存" Click="SaveSettings_Click" />
-                <MenuItem Header="名前を付けて保存..." Click="SaveSettingsAs_Click" />
+                <MenuItem Header="{DynamicResource MenuLoadSettings}" Click="LoadSettings_Click" />
+                <MenuItem Header="{DynamicResource MenuSave}" Click="SaveSettings_Click" />
+                <MenuItem Header="{DynamicResource MenuSaveAs}" Click="SaveSettingsAs_Click" />
                 <Separator />
-                <MenuItem Header="終了" Click="Exit_Click" />
+                <MenuItem Header="{DynamicResource MenuExit}" Click="Exit_Click" />
             </MenuItem>
-            <MenuItem Header="通信">
-                <MenuItem Header="PLC通信設定" Click="PlcSettings_Click" />
-                <MenuItem Header="Modbus通信設定" Click="ModbusSettings_Click" />
+            <MenuItem Header="{DynamicResource MenuCommunication}">
+                <MenuItem Header="{DynamicResource MenuPlcSettings}" Click="PlcSettings_Click" />
+                <MenuItem Header="{DynamicResource MenuModbusSettings}" Click="ModbusSettings_Click" />
             </MenuItem>
-            <MenuItem Header="ツール">
-                <MenuItem Header="PLCアドレス一括割当" Click="BulkAssign_Click" />
-                <MenuItem Header="ログ表示" Click="ShowLog_Click" />
+            <MenuItem Header="{DynamicResource MenuTools}">
+                <MenuItem Header="{DynamicResource MenuBulkAssign}" Click="BulkAssign_Click" />
+                <MenuItem Header="{DynamicResource MenuShowLog}" Click="ShowLog_Click" />
             </MenuItem>
-            <MenuItem Header="ヘルプ">
-                <MenuItem Header="バージョン情報" Click="About_Click" />
+            <MenuItem Header="{DynamicResource MenuLanguage}">
+                <MenuItem x:Name="EnglishLanguageMenuItem"
+                          Header="{DynamicResource LanguageEnglish}"
+                          IsCheckable="True"
+                          Click="LanguageEnglish_Click" />
+                <MenuItem x:Name="JapaneseLanguageMenuItem"
+                          Header="{DynamicResource LanguageJapanese}"
+                          IsCheckable="True"
+                          Click="LanguageJapanese_Click" />
+            </MenuItem>
+            <MenuItem Header="{DynamicResource MenuHelp}">
+                <MenuItem Header="{DynamicResource MenuAbout}" Click="About_Click" />
             </MenuItem>
         </Menu>
 
@@ -366,10 +376,10 @@
                               GridLinesVisibility="Horizontal"
                               Sorting="MappingGrid_Sorting">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Modbus種別" Binding="{Binding ModbusType}" SortMemberPath="ModbusType" IsReadOnly="True" Width="120" />
-                            <DataGridTextColumn Header="Modbusアドレス" Binding="{Binding ModbusAddress}" SortMemberPath="ModbusAddress" IsReadOnly="True" Width="110" />
-                            <DataGridTextColumn Header="PLCアドレス" Binding="{Binding PlcAddress, UpdateSourceTrigger=PropertyChanged}" Width="120" />
-                            <DataGridTemplateColumn Header="表示型" Width="90">
+                            <DataGridTextColumn Header="{DynamicResource ColumnModbusType}" Binding="{Binding ModbusType}" SortMemberPath="ModbusType" IsReadOnly="True" Width="120" />
+                            <DataGridTextColumn Header="{DynamicResource ColumnModbusAddress}" Binding="{Binding ModbusAddress}" SortMemberPath="ModbusAddress" IsReadOnly="True" Width="110" />
+                            <DataGridTextColumn Header="{DynamicResource ColumnPlcAddress}" Binding="{Binding PlcAddress, UpdateSourceTrigger=PropertyChanged}" Width="120" />
+                            <DataGridTemplateColumn Header="{DynamicResource ColumnDisplayType}" Width="90">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
@@ -390,7 +400,7 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="コメント" Binding="{Binding Comment, UpdateSourceTrigger=PropertyChanged}" Width="2*" />
+                            <DataGridTextColumn Header="{DynamicResource ColumnComment}" Binding="{Binding Comment, UpdateSourceTrigger=PropertyChanged}" Width="2*" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>

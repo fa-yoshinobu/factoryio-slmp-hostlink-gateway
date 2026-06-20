@@ -1,3 +1,5 @@
+using GatewayApp.Services;
+
 namespace GatewayApp.Models;
 
 public enum CsvImportAction
@@ -13,9 +15,9 @@ public sealed class CsvImportPreviewItem
 
     public string ActionText => Action switch
     {
-        CsvImportAction.Add => "追加",
-        CsvImportAction.Update => "更新",
-        _ => "スキップ",
+        CsvImportAction.Add => Loc.Text("ActionAdd"),
+        CsvImportAction.Update => Loc.Text("ActionUpdate"),
+        _ => Loc.Text("ActionSkip"),
     };
 
     public ModbusType? ModbusType { get; init; }

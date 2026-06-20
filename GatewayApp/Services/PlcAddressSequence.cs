@@ -32,20 +32,20 @@ public static class PlcAddressSequence
 
         if (string.IsNullOrWhiteSpace(prefix))
         {
-            error = "PLC デバイスを選択してください。";
+            error = Loc.Text("SelectPlcDevice");
             return false;
         }
 
         var rule = ResolveRule(plcProtocol, slmpProfile, prefix.Trim());
         if (!TryParseStartNumber(startNumberText, rule, out var startNumber))
         {
-            error = $"{rule.Prefix} の開始番号が不正です。";
+            error = Loc.Format("StartNumberInvalid", rule.Prefix);
             return false;
         }
 
         if (rule.DisplayRule == PlcAddressDisplayRule.KeyenceBitBank && startNumber % 100 > 15)
         {
-            error = $"{rule.Prefix} の下2桁は 00..15 で指定してください。";
+            error = Loc.Format("BitBankRange", rule.Prefix);
             return false;
         }
 
@@ -53,7 +53,7 @@ public static class PlcAddressSequence
         var nextLogical = (long)startLogical + offset;
         if (nextLogical < 0 || nextLogical > uint.MaxValue)
         {
-            error = "PLC アドレスが範囲外です。";
+            error = Loc.Text("PlcAddressOutOfRange");
             return false;
         }
 

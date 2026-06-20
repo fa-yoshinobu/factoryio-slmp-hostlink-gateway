@@ -117,7 +117,7 @@ public sealed class PlcClientService : IAsyncDisposable
     {
         if (string.IsNullOrWhiteSpace(entry.PlcAddress))
         {
-            throw new InvalidOperationException($"{entry.ModbusLabel} の PLC アドレスが未設定です。");
+            throw new InvalidOperationException(Loc.Format("PlcAddressMissing", entry.ModbusLabel));
         }
 
         if (_slmp is not null)
@@ -150,7 +150,7 @@ public sealed class PlcClientService : IAsyncDisposable
             return;
         }
 
-        throw new InvalidOperationException("PLC に接続されていません。");
+        throw new InvalidOperationException(Loc.Text("PlcNotConnected"));
     }
 
     public async ValueTask DisposeAsync()
@@ -202,7 +202,7 @@ public sealed class PlcClientService : IAsyncDisposable
         {
             "TCP" => SlmpTransportMode.Tcp,
             "UDP" => SlmpTransportMode.Udp,
-            _ => throw new InvalidOperationException($"PLC通信方式が不正です: {text}"),
+            _ => throw new InvalidOperationException(Loc.Format("InvalidPlcTransport", text)),
         };
     }
 
@@ -212,7 +212,7 @@ public sealed class PlcClientService : IAsyncDisposable
         {
             "TCP" => HostLinkTransportMode.Tcp,
             "UDP" => HostLinkTransportMode.Udp,
-            _ => throw new InvalidOperationException($"PLC通信方式が不正です: {text}"),
+            _ => throw new InvalidOperationException(Loc.Format("InvalidPlcTransport", text)),
         };
     }
 
@@ -221,14 +221,22 @@ public sealed class PlcClientService : IAsyncDisposable
         var profile = settings.Protocol.Equals("SLMP", StringComparison.OrdinalIgnoreCase)
             ? settings.SlmpProfile
             : settings.HostLinkProfile;
-        return $"PLC接続に失敗しました ({settings.Protocol} {settings.Transport} {settings.Host}:{settings.Port}, 機種={profile}, タイムアウト={settings.TimeoutSec}秒)。{DescribeConnectionFailure(exception)}";
+        return Loc.Format(
+            "PlcConnectionFailed",
+            settings.Protocol,
+            settings.Transport,
+            settings.Host,
+            settings.Port,
+            profile,
+            settings.TimeoutSec,
+            DescribeConnectionFailure(exception));
     }
 
     private static string DescribeConnectionFailure(Exception exception)
     {
         if (exception is OperationCanceledException)
         {
-            return "応答待ちがキャンセルまたはタイムアウトしました。";
+            return Loc.Text("ResponseTimeout");
         }
 
         var socketException = FindSocketException(exception);

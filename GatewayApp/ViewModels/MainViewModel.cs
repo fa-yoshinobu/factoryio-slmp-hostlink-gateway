@@ -39,13 +39,13 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     private bool _isForceYEnabled;
 
     [ObservableProperty]
-    private string _gatewayStatus = "停止中";
+    private string _gatewayStatus = Loc.Text("GatewayStopped");
 
     [ObservableProperty]
-    private string _modbusStatus = "Modbus TCP 停止";
+    private string _modbusStatus = Loc.Text("ModbusTcpStopped");
 
     [ObservableProperty]
-    private string _plcStatus = "PLC 未接続";
+    private string _plcStatus = Loc.Text("PlcDisconnected");
 
     [ObservableProperty]
     private string _statusMessage = string.Empty;
@@ -68,6 +68,8 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         _pollTimer.Tick += PollTimerOnTick;
 
         ApplySettings(null);
+        Loc.LanguageChanged += OnLanguageChanged;
+        RefreshLocalizedText();
         _pollTimer.Start();
     }
 
@@ -86,13 +88,13 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         get
         {
             var settingsText = string.IsNullOrWhiteSpace(CurrentSettingsPath)
-                ? "未保存設定"
+                ? Loc.Text("UnsavedSettings")
                 : CurrentSettingsPath;
             return $"Factory I/O Gateway - {settingsText}{(IsDirty ? " *" : string.Empty)}";
         }
     }
 
-    public string StartStopText => IsRunning ? "■ 停止" : "▶ 起動";
+    public string StartStopText => IsRunning ? Loc.Text("StopButton") : Loc.Text("StartButton");
 
     public string ForceXText => IsForceXEnabled ? "FORCE X ON" : "FORCE X";
 
@@ -123,7 +125,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     {
         if (IsRunning)
         {
-            await StopAsync("停止中").ConfigureAwait(true);
+            await StopAsync(Loc.Text("GatewayStopping")).ConfigureAwait(true);
             return;
         }
 
@@ -132,17 +134,17 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         {
             await _gatewayService.StartAsync(Plc, Modbus).ConfigureAwait(true);
             IsRunning = true;
-            GatewayStatus = "稼働中";
-            ModbusStatus = $"Modbus TCP 待機中 {Modbus.ListenIp}:{Modbus.Port}";
-            PlcStatus = "PLC 接続中";
+            GatewayStatus = Loc.Text("GatewayRunning");
+            ModbusStatus = Loc.Format("ModbusTcpWaiting", Modbus.ListenIp, Modbus.Port);
+            PlcStatus = Loc.Text("PlcConnected");
             _pollTimer.Interval = TimeSpan.FromMilliseconds(Math.Max(10, Plc.PollingMs));
         }
         catch (Exception ex)
         {
             IsRunning = false;
-            GatewayStatus = "停止中";
-            ModbusStatus = "Modbus TCP 停止";
-            PlcStatus = "PLC 未接続";
+            GatewayStatus = Loc.Text("GatewayStopped");
+            ModbusStatus = Loc.Text("ModbusTcpStopped");
+            PlcStatus = Loc.Text("PlcDisconnected");
             ReportError(ex.Message);
         }
     }
@@ -164,12 +166,12 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     {
         if (string.IsNullOrWhiteSpace(CurrentSettingsPath))
         {
-            throw new InvalidOperationException("保存先の設定ファイルが未指定です。名前を付けて保存してください。");
+            throw new InvalidOperationException(Loc.Text("SavePathMissing"));
         }
 
         _settingsService.Save(CurrentSettingsPath, BuildSettings());
         IsDirty = false;
-        SetStatus($"設定を上書き保存しました: {CurrentSettingsPath}");
+        SetStatus(Loc.Format("SettingsSavedOverwrite", CurrentSettingsPath));
     }
 
     public void SaveSettingsAs(string path)
@@ -177,14 +179,14 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         _settingsService.Save(path, BuildSettings());
         CurrentSettingsPath = path;
         IsDirty = false;
-        SetStatus($"設定を保存しました: {path}");
+        SetStatus(Loc.Format("SettingsSavedAs", path));
     }
 
     public void LoadSettingsFromFile(string path)
     {
         if (IsRunning)
         {
-            ReportError("稼働中は設定を読み込めません。");
+            ReportError(Loc.Text("SettingsLoadRunning"));
             return;
         }
 
@@ -192,7 +194,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         ApplySettings(settings);
         CurrentSettingsPath = path;
         IsDirty = false;
-        SetStatus($"設定を読み込みました: {path}");
+        SetStatus(Loc.Format("SettingsLoaded", path));
     }
 
     [RelayCommand]
@@ -239,7 +241,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         {
             MarkDirty();
         }
-        SetStatus($"CSV インポート: 追加 {result.Added} / 更新 {result.Updated} / スキップ {result.Skipped}");
+        SetStatus(Loc.Format("CsvImportStatus", result.Added, result.Updated, result.Skipped));
     }
 
     public void ApplyPlcSettings(PlcSettings settings)
@@ -393,6 +395,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         _pollTimer.Stop();
+        Loc.LanguageChanged -= OnLanguageChanged;
         await _gatewayService.DisposeAsync().ConfigureAwait(false);
     }
 
@@ -421,6 +424,41 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     {
         ApplyForceState(DataDirection.FromPlc, value);
         OnPropertyChanged(nameof(ForceYText));
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        if (!_dispatcher.CheckAccess())
+        {
+            _dispatcher.BeginInvoke(() => OnLanguageChanged(sender, e));
+            return;
+        }
+
+        RefreshLocalizedText();
+    }
+
+    private void RefreshLocalizedText()
+    {
+        OnPropertyChanged(nameof(WindowTitle));
+        OnPropertyChanged(nameof(StartStopText));
+
+        if (IsRunning)
+        {
+            GatewayStatus = Loc.Text("GatewayRunning");
+            ModbusStatus = Loc.Format("ModbusTcpWaiting", Modbus.ListenIp, Modbus.Port);
+            PlcStatus = Loc.Text("PlcConnected");
+        }
+        else
+        {
+            GatewayStatus = Loc.Text("GatewayStopped");
+            ModbusStatus = Loc.Text("ModbusTcpStopped");
+            PlcStatus = Loc.Text("PlcDisconnected");
+        }
+
+        foreach (var entry in Mappings)
+        {
+            entry.RefreshComputed();
+        }
     }
 
     private void ApplyForceState(DataDirection direction, bool enabled)
@@ -482,7 +520,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         catch (Exception ex)
         {
             ReportError(ex.Message);
-            await StopAsync("通信エラーで停止").ConfigureAwait(true);
+            await StopAsync(Loc.Text("GatewayStoppedByError")).ConfigureAwait(true);
         }
         finally
         {
@@ -494,8 +532,8 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     {
         IsRunning = false;
         GatewayStatus = gatewayStatus;
-        ModbusStatus = "Modbus TCP 停止中";
-        PlcStatus = "PLC 切断中";
+        ModbusStatus = Loc.Text("ModbusTcpStopping");
+        PlcStatus = Loc.Text("PlcDisconnecting");
 
         try
         {
@@ -506,8 +544,8 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         }
         finally
         {
-            ModbusStatus = "Modbus TCP 停止";
-            PlcStatus = "PLC 未接続";
+            ModbusStatus = Loc.Text("ModbusTcpStopped");
+            PlcStatus = Loc.Text("PlcDisconnected");
         }
     }
 
@@ -529,7 +567,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         catch (Exception ex)
         {
             ReportError(ex.Message);
-            await StopAsync("通信エラーで停止").ConfigureAwait(true);
+            await StopAsync(Loc.Text("GatewayStoppedByError")).ConfigureAwait(true);
         }
     }
 
@@ -591,7 +629,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
             }
 
             _gatewayLogFailureReported = true;
-            var message = $"ログファイル書き込み失敗: {ex.Message}";
+            var message = Loc.Format("LogWriteFailed", ex.Message);
             StatusMessage = message;
             Logs.Add(new LogEntry(message));
         }
@@ -844,14 +882,14 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
             if (!double.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, out var scaled)
                 && !double.TryParse(input, NumberStyles.Float, CultureInfo.CurrentCulture, out scaled))
             {
-                error = "数値を入力してください。";
+                error = Loc.Text("NumericRequired");
                 return false;
             }
 
             var signed = (int)Math.Round(scaled * Math.Max(1, entry.RealScale));
             if (signed is < short.MinValue or > short.MaxValue)
             {
-                error = "Int16 範囲 (-32768〜32767) を超えています。";
+                error = Loc.Text("Int16Range");
                 return false;
             }
 
@@ -862,13 +900,13 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         if (!int.TryParse(input, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value)
             && !int.TryParse(input, NumberStyles.Integer, CultureInfo.CurrentCulture, out value))
         {
-            error = "整数を入力してください。";
+            error = Loc.Text("IntegerInputRequired");
             return false;
         }
 
         if (value is < short.MinValue or > short.MaxValue)
         {
-            error = "Int16 範囲 (-32768〜32767) を超えています。";
+            error = Loc.Text("Int16Range");
             return false;
         }
 

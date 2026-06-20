@@ -43,6 +43,7 @@ internal static class Program
             }
             else
             {
+                SmokeLanguageSwitch(window, viewModel, failures);
                 SmokeErrorLogBinding(window, viewModel, failures);
                 SmokeExpectedStopExceptionSuppression(viewModel, failures);
                 SmokeRegisterForceInput(viewModel, failures);
@@ -349,6 +350,54 @@ internal static class Program
         finally
         {
             logWindow?.Close();
+        }
+    }
+
+    private static void SmokeLanguageSwitch(MainWindow window, MainViewModel viewModel, List<string> failures)
+    {
+        try
+        {
+            if (!viewModel.WindowTitle.Contains("Unsaved settings", StringComparison.Ordinal))
+            {
+                failures.Add($"Default language was not English. Title={viewModel.WindowTitle}");
+            }
+
+            if (window.FindName("JapaneseLanguageMenuItem") is not MenuItem japaneseItem
+                || window.FindName("EnglishLanguageMenuItem") is not MenuItem englishItem)
+            {
+                failures.Add("Language menu items were not found.");
+                return;
+            }
+
+            japaneseItem.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+            PumpDispatcher();
+            if (!viewModel.WindowTitle.Contains("未保存設定", StringComparison.Ordinal) || !japaneseItem.IsChecked)
+            {
+                failures.Add($"Japanese language switch did not update UI state. Title={viewModel.WindowTitle}");
+            }
+
+            if (window.FindName("MappingGrid") is DataGrid mappingGrid
+                && mappingGrid.Columns[0].Header?.ToString() != "Modbus種別")
+            {
+                failures.Add($"Mapping grid header did not switch to Japanese. Header={mappingGrid.Columns[0].Header}");
+            }
+
+            englishItem.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+            PumpDispatcher();
+            if (!viewModel.WindowTitle.Contains("Unsaved settings", StringComparison.Ordinal) || !englishItem.IsChecked)
+            {
+                failures.Add($"English language switch did not restore UI state. Title={viewModel.WindowTitle}");
+            }
+
+            if (window.FindName("MappingGrid") is DataGrid restoredGrid
+                && restoredGrid.Columns[0].Header?.ToString() != "Modbus Type")
+            {
+                failures.Add($"Mapping grid header did not switch back to English. Header={restoredGrid.Columns[0].Header}");
+            }
+        }
+        catch (Exception ex)
+        {
+            failures.Add($"Language switch smoke failed: {ex.GetType().Name}: {ex.Message}");
         }
     }
 
@@ -792,8 +841,8 @@ internal static class Program
             }
             catch (InvalidOperationException ex)
             {
-                if (!ex.Message.Contains("PLC接続に失敗しました (HostLink BAD 127.0.0.1:8501", StringComparison.Ordinal)
-                    || !ex.Message.Contains("PLC通信方式が不正です: BAD", StringComparison.Ordinal))
+                if (!ex.Message.Contains("PLC connection failed (HostLink BAD 127.0.0.1:8501", StringComparison.Ordinal)
+                    || !ex.Message.Contains("Invalid PLC transport: BAD", StringComparison.Ordinal))
                 {
                     failures.Add($"PLC connection failure message lacked connection context: {ex.Message}");
                 }
@@ -888,7 +937,7 @@ internal static class Program
             {
                 File.WriteAllText(csvPath, "Name,Data Type,Address\r\nA,,Holding Reg 0\r\n");
                 var preview = new CsvImportService().Preview(csvPath, [], 100);
-                if (preview.Count != 1 || preview[0].Action != CsvImportAction.Skip || preview[0].Reason != "DataType 未設定")
+                if (preview.Count != 1 || preview[0].Action != CsvImportAction.Skip || preview[0].Reason != "DataType is not set.")
                 {
                     failures.Add("Empty register DataType was not skipped with an explicit reason.");
                 }

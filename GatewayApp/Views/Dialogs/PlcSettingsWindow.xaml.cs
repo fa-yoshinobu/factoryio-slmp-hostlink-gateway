@@ -1,4 +1,5 @@
 using GatewayApp.Models;
+using GatewayApp.Services;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -44,7 +45,7 @@ public partial class PlcSettingsWindow : Window
         HostLinkRadio.IsChecked = !SlmpRadio.IsChecked;
         SaveButton.Visibility = isRunning ? Visibility.Collapsed : Visibility.Visible;
         WarningText.Visibility = isRunning ? Visibility.Visible : Visibility.Collapsed;
-        WarningText.Text = isRunning ? "稼働中は読み取り専用です" : WarningText.Text;
+        WarningText.Text = isRunning ? Loc.Text("ReadOnlyRunning") : WarningText.Text;
         UpdateProfileSelector();
         UpdateSimulatorOption();
         if (isRunning)
@@ -75,8 +76,6 @@ public partial class PlcSettingsWindow : Window
 
     private void UpdateProfileSelector()
     {
-        ProfileLabel.Text = "機種";
-
         _updatingSimulatorUi = true;
         try
         {
