@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="PLCアドレス一括割当"
         Width="390"
-        Height="270"
+        Height="230"
         WindowStartupLocation="CenterOwner">
     <DockPanel Background="#ebebeb">
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="14">
@@ -12,7 +12,6 @@
         </StackPanel>
         <Grid Margin="18,16">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -30,9 +29,6 @@
 
             <TextBlock Grid.Row="2" Grid.Column="0" Text="開始番号" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <TextBox x:Name="StartTextBox" Grid.Row="2" Grid.Column="1" Text="0" Margin="0,0,0,10" />
-
-            <TextBlock Grid.Row="3" Grid.Column="0" Text="増分" VerticalAlignment="Center" Margin="0,0,8,0" TextAlignment="Right" />
-            <TextBox x:Name="IncrementTextBox" Grid.Row="3" Grid.Column="1" Text="1" />
         </Grid>
     </DockPanel>
 </Window>

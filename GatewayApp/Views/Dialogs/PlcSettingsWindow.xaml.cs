@@ -1,6 +1,7 @@
 using GatewayApp.Models;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace GatewayApp.Views.Dialogs;
 
@@ -28,6 +29,8 @@ public partial class PlcSettingsWindow : Window
 
     private string _currentProtocol;
 
+    private bool _updatingSimulatorUi;
+
     public PlcSettingsWindow(PlcSettings settings, bool isRunning)
     {
         InitializeComponent();
@@ -43,6 +46,7 @@ public partial class PlcSettingsWindow : Window
         WarningText.Visibility = isRunning ? Visibility.Visible : Visibility.Collapsed;
         WarningText.Text = isRunning ? "稼働中は読み取り専用です" : WarningText.Text;
         UpdateProfileSelector();
+        UpdateSimulatorOption();
         if (isRunning)
         {
             DialogReadOnlyHelper.SetReadOnly(FormGrid, disableSelectors: true);
@@ -59,7 +63,11 @@ public partial class PlcSettingsWindow : Window
         }
 
         var protocol = SlmpRadio.IsChecked == true ? "SLMP" : "HostLink";
-        ApplyProtocolDefaultPort(_currentProtocol, protocol);
+        if (!Settings.UseSimulator)
+        {
+            ApplyProtocolDefaultPort(_currentProtocol, protocol);
+        }
+
         Settings.Protocol = protocol;
         _currentProtocol = protocol;
         UpdateProfileSelector();
@@ -69,20 +77,113 @@ public partial class PlcSettingsWindow : Window
     {
         ProfileLabel.Text = "機種";
 
-        if (SlmpRadio.IsChecked == true)
+        _updatingSimulatorUi = true;
+        try
         {
-            ProfileCombo.ItemsSource = WithCurrentOption(SlmpProfiles, Settings.SlmpProfile, PlcSettings.FormatSlmpProfile);
-            ProfileCombo.SelectedValue = Settings.SlmpProfile;
+            if (SlmpRadio.IsChecked == true)
+            {
+                ProfileCombo.ItemsSource = WithCurrentOption(SlmpProfiles, Settings.SlmpProfile, PlcSettings.FormatSlmpProfile);
+                ProfileCombo.SelectedValue = Settings.SlmpProfile;
+                return;
+            }
+
+            ProfileCombo.ItemsSource = WithCurrentOption(HostLinkProfiles, Settings.HostLinkProfile, PlcSettings.FormatHostLinkProfile);
+            ProfileCombo.SelectedValue = Settings.HostLinkProfile;
+        }
+        finally
+        {
+            _updatingSimulatorUi = false;
+            UpdateSimulatorOption();
+        }
+    }
+
+    private void ProfileCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_updatingSimulatorUi)
+        {
             return;
         }
 
-        ProfileCombo.ItemsSource = WithCurrentOption(HostLinkProfiles, Settings.HostLinkProfile, PlcSettings.FormatHostLinkProfile);
-        ProfileCombo.SelectedValue = Settings.HostLinkProfile;
+        UpdateSelectedProfileSetting();
+        UpdateSimulatorOption();
+    }
+
+    private void SimulatorCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_updatingSimulatorUi)
+        {
+            return;
+        }
+
+        UpdateSelectedProfileSetting();
+        Settings.UseSimulator = SimulatorCheckBox.Visibility == Visibility.Visible
+            && SimulatorCheckBox.IsChecked == true;
+        UpdateEndpointInputState();
+    }
+
+    private void UpdateSimulatorOption()
+    {
+        if (SimulatorCheckBox is null)
+        {
+            return;
+        }
+
+        var protocol = SelectedProtocol();
+        UpdateSelectedProfileSetting();
+        var supportsSimulator = PlcSettings.SupportsSimulator(protocol, Settings.SlmpProfile, Settings.HostLinkProfile);
+
+        _updatingSimulatorUi = true;
+        try
+        {
+            SimulatorCheckBox.Content = protocol.Equals("HostLink", StringComparison.OrdinalIgnoreCase)
+                ? "KV STUDIO(Simulator)"
+                : "GX Simulator 3";
+            SimulatorCheckBox.Visibility = supportsSimulator ? Visibility.Visible : Visibility.Collapsed;
+            if (!supportsSimulator)
+            {
+                Settings.UseSimulator = false;
+                SimulatorCheckBox.IsChecked = false;
+                return;
+            }
+
+            SimulatorCheckBox.IsChecked = Settings.UseSimulator;
+        }
+        finally
+        {
+            _updatingSimulatorUi = false;
+        }
+
+        UpdateEndpointInputState();
+    }
+
+    private void UpdateEndpointInputState()
+    {
+        var canEditEndpoint = SimulatorCheckBox.Visibility != Visibility.Visible
+            || SimulatorCheckBox.IsChecked != true;
+        HostTextBox.IsEnabled = canEditEndpoint;
+        TransportCombo.IsEnabled = canEditEndpoint;
+        PortTextBox.IsEnabled = canEditEndpoint;
+    }
+
+    private void UpdateSelectedProfileSetting()
+    {
+        if (SlmpRadio.IsChecked == true)
+        {
+            Settings.SlmpProfile = ProfileCombo.SelectedValue as string ?? Settings.SlmpProfile;
+            return;
+        }
+
+        Settings.HostLinkProfile = ProfileCombo.SelectedValue as string ?? Settings.HostLinkProfile;
+    }
+
+    private string SelectedProtocol()
+    {
+        return SlmpRadio.IsChecked == true ? "SLMP" : "HostLink";
     }
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {
-        Settings.Protocol = SlmpRadio.IsChecked == true ? "SLMP" : "HostLink";
+        Settings.Protocol = SelectedProtocol();
         Settings.Transport = TransportCombo.SelectedValue as string ?? Settings.Transport;
         if (Settings.Protocol.Equals("SLMP", StringComparison.OrdinalIgnoreCase))
         {
@@ -92,6 +193,9 @@ public partial class PlcSettingsWindow : Window
         {
             Settings.HostLinkProfile = ProfileCombo.SelectedValue as string ?? PlcSettings.DefaultHostLinkProfile;
         }
+
+        Settings.UseSimulator = SimulatorCheckBox.Visibility == Visibility.Visible
+            && SimulatorCheckBox.IsChecked == true;
 
         Settings.Normalize();
         DialogResult = true;

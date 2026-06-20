@@ -1,6 +1,5 @@
 using GatewayApp.Models;
 using GatewayApp.Services;
-using System.Globalization;
 using System.Windows;
 
 namespace GatewayApp.Views.Dialogs;
@@ -35,8 +34,6 @@ public partial class BulkAssignWindow : Window
 
     public string StartNumberText { get; private set; } = "0";
 
-    public int Increment { get; private set; } = 1;
-
     private void Apply_Click(object sender, RoutedEventArgs e)
     {
         if (TypeCombo.SelectedItem is ModbusType type)
@@ -58,13 +55,6 @@ public partial class BulkAssignWindow : Window
             return;
         }
 
-        if (!int.TryParse(IncrementTextBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var increment) || increment == 0)
-        {
-            MessageBox.Show(this, "増分は 0 以外の整数で入力してください。", "一括割当", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-
-        Increment = increment;
         DialogResult = true;
     }
 

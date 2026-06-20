@@ -9,15 +9,13 @@ public sealed class LogFileService
     private readonly string _directory;
 
     public LogFileService()
-        : this(Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "FactoryIOGateway"))
+        : this(AppContext.BaseDirectory)
     {
     }
 
     public LogFileService(string directory)
     {
-        _directory = directory;
+        _directory = Path.GetFullPath(directory);
     }
 
     public void WriteGatewayLog(LogEntry entry)

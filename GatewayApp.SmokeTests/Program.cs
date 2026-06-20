@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -47,12 +48,15 @@ internal static class Program
                 SmokeRegisterForceInput(viewModel, failures);
                 SmokeScaledRawFormatting(failures);
                 SmokePlcProfileOptions(failures);
+                SmokeStrictSettingsJson(failures);
+                SmokePlcSimulatorOption(failures);
                 SmokePlcConnectionFailureMessage(failures);
                 SmokeBulkAssignDeviceOptions(failures);
                 SmokePlcAddressSequence(failures);
                 SmokeValueBrushConverter(failures);
                 SmokeTodoFixes(viewModel, failures);
                 SmokeLogWindow(viewModel, failures);
+                SmokeLogFileDirectory(failures);
                 SmokeAboutWindow(failures);
                 SmokeModbusStartStop(failures);
                 SmokeMainWindowClosesWhenDisconnected(failures);
@@ -348,6 +352,34 @@ internal static class Program
         }
     }
 
+    private static void SmokeLogFileDirectory(List<string> failures)
+    {
+        try
+        {
+            var marker = $"smoke-log-path-{Guid.NewGuid():N}";
+            var service = new LogFileService();
+            service.WriteGatewayLog(new LogEntry(marker));
+            service.WriteExceptionLog(new InvalidOperationException(marker));
+
+            var gatewayLogPath = Path.Combine(AppContext.BaseDirectory, "gateway.log");
+            var errorLogPath = Path.Combine(AppContext.BaseDirectory, "error.log");
+
+            if (!File.Exists(gatewayLogPath) || !File.ReadAllText(gatewayLogPath).Contains(marker, StringComparison.Ordinal))
+            {
+                failures.Add($"gateway.log was not written under the executable directory: {gatewayLogPath}");
+            }
+
+            if (!File.Exists(errorLogPath) || !File.ReadAllText(errorLogPath).Contains(marker, StringComparison.Ordinal))
+            {
+                failures.Add($"error.log was not written under the executable directory: {errorLogPath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            failures.Add($"Log file directory smoke failed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
     private static void SmokeAboutWindow(List<string> failures)
     {
         AboutWindow? aboutWindow = null;
@@ -427,11 +459,12 @@ internal static class Program
                 Protocol = "HostLink",
                 Port = PlcSettings.DefaultHostLinkPort,
                 Transport = "udp",
-                SlmpProfile = "iQ-L",
+                SlmpProfile = "melsec:iq-l",
                 HostLinkProfile = "keyence:kv-8000-xym",
             }.Normalize();
 
-            AssertEqual("melsec:iq-l", settings.SlmpProfile, failures, "SLMP profile label normalization");
+            AssertEqual("melsec:iq-l", settings.SlmpProfile, failures, "SLMP canonical profile remains literal");
+            AssertEqual("iQ-L", PlcSettings.NormalizeSlmpProfile("iQ-L"), failures, "SLMP profile legacy label remains literal");
             AssertEqual("keyence:kv-8000-xym", settings.HostLinkProfile, failures, "HostLink profile canonical value");
             AssertEqual("UDP", settings.Transport, failures, "PLC transport normalization");
 
@@ -466,6 +499,273 @@ internal static class Program
         finally
         {
             settingsWindow?.Close();
+        }
+    }
+
+    private static void SmokeStrictSettingsJson(List<string> failures)
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"gateway-settings-smoke-{Guid.NewGuid():N}.json");
+        try
+        {
+            AssertSettingsJsonRejected(
+                path,
+                """
+                {
+                  "plc": {
+                    "protocol": "SLMP",
+                    "host": "127.0.0.1",
+                    "port": 5511,
+                    "transport": "TCP",
+                    "timeoutSec": 3,
+                    "pollingMs": 100,
+                    "slmpProfile": "melsec:iq-r",
+                    "hostLinkProfile": "keyence:kv-8000",
+                    "useSimulator": true,
+                    "legacyField": true
+                  },
+                  "modbus": {
+                    "listenIp": "127.0.0.1",
+                    "port": 502,
+                    "unitId": 1,
+                    "realScale": 100,
+                    "maxCoilAddress": null,
+                    "maxDiscreteInputAddress": null,
+                    "maxHoldingRegisterAddress": null,
+                    "maxInputRegisterAddress": null
+                  },
+                  "realScale": 100,
+                  "mappings": []
+                }
+                """,
+                failures,
+                "Settings JSON accepted an unknown legacy field.");
+
+            AssertSettingsJsonRejected(
+                path,
+                """
+                {
+                  "plc": {
+                    "protocol": "SLMP",
+                    "host": "127.0.0.1",
+                    "port": 5511,
+                    "transport": "TCP",
+                    "timeoutSec": 3,
+                    "pollingMs": 100,
+                    "slmpProfile": "melsec:iq-r",
+                    "hostLinkProfile": "keyence:kv-8000"
+                  },
+                  "modbus": {
+                    "listenIp": "127.0.0.1",
+                    "port": 502,
+                    "unitId": 1,
+                    "realScale": 100,
+                    "maxCoilAddress": null,
+                    "maxDiscreteInputAddress": null,
+                    "maxHoldingRegisterAddress": null,
+                    "maxInputRegisterAddress": null
+                  },
+                  "realScale": 100,
+                  "mappings": []
+                }
+                """,
+                failures,
+                "Settings JSON accepted a missing useSimulator field.");
+        }
+        catch (Exception ex)
+        {
+            failures.Add($"Strict settings JSON smoke failed: {ex.GetType().Name}: {ex.Message}");
+        }
+        finally
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+    }
+
+    private static void AssertSettingsJsonRejected(string path, string json, List<string> failures, string failureMessage)
+    {
+        File.WriteAllText(path, json);
+        try
+        {
+            _ = new SettingsService().Load(path);
+            failures.Add(failureMessage);
+        }
+        catch (JsonException)
+        {
+        }
+    }
+
+    private static void SmokePlcSimulatorOption(List<string> failures)
+    {
+        PlcSettingsWindow? settingsWindow = null;
+        try
+        {
+            var slmpSettings = new PlcSettings
+            {
+                Protocol = "SLMP",
+                Host = "192.168.0.10",
+                Port = PlcSettings.DefaultSlmpPort,
+                Transport = "UDP",
+                SlmpProfile = "melsec:iq-r",
+            }.Normalize();
+
+            settingsWindow = new PlcSettingsWindow(slmpSettings, isRunning: false);
+            settingsWindow.Show();
+            settingsWindow.UpdateLayout();
+            PumpDispatcher();
+
+            if (settingsWindow.FindName("SimulatorCheckBox") is not CheckBox simulatorCheck)
+            {
+                failures.Add("PLC simulator checkbox was not found.");
+                return;
+            }
+
+            if (simulatorCheck.Visibility != Visibility.Visible)
+            {
+                failures.Add("SLMP simulator checkbox was not visible for iQ-R.");
+            }
+
+            AssertEqual("GX Simulator 3", simulatorCheck.Content?.ToString() ?? string.Empty, failures, "SLMP simulator label");
+            simulatorCheck.IsChecked = true;
+            PumpDispatcher();
+            AssertSimulatorSettingsPreserved(
+                settingsWindow,
+                slmpSettings,
+                "192.168.0.10",
+                PlcSettings.DefaultSlmpPort,
+                "UDP",
+                failures,
+                "SLMP simulator settings");
+
+            settingsWindow.Close();
+            settingsWindow = new PlcSettingsWindow(new PlcSettings
+            {
+                Protocol = "SLMP",
+                SlmpProfile = "melsec:iq-f",
+            }.Normalize(), isRunning: false);
+            settingsWindow.Show();
+            settingsWindow.UpdateLayout();
+            PumpDispatcher();
+
+            if (settingsWindow.FindName("SimulatorCheckBox") is CheckBox unsupportedSlmpCheck
+                && unsupportedSlmpCheck.Visibility != Visibility.Collapsed)
+            {
+                failures.Add("SLMP simulator checkbox was visible for unsupported iQ-F.");
+            }
+
+            settingsWindow.Close();
+            var hostLinkSettings = new PlcSettings
+            {
+                Protocol = "HostLink",
+                Host = "192.168.0.20",
+                Port = 12345,
+                Transport = "UDP",
+                HostLinkProfile = "keyence:kv-x500",
+            }.Normalize();
+            settingsWindow = new PlcSettingsWindow(hostLinkSettings, isRunning: false);
+            settingsWindow.Show();
+            settingsWindow.UpdateLayout();
+            PumpDispatcher();
+
+            if (settingsWindow.FindName("SimulatorCheckBox") is not CheckBox hostLinkSimulatorCheck)
+            {
+                failures.Add("HostLink simulator checkbox was not found.");
+                return;
+            }
+
+            if (hostLinkSimulatorCheck.Visibility != Visibility.Visible)
+            {
+                failures.Add("HostLink simulator checkbox was not visible for KV-X500.");
+            }
+
+            AssertEqual("KV STUDIO(Simulator)", hostLinkSimulatorCheck.Content?.ToString() ?? string.Empty, failures, "HostLink simulator label");
+            hostLinkSimulatorCheck.IsChecked = true;
+            PumpDispatcher();
+            AssertSimulatorSettingsPreserved(
+                settingsWindow,
+                hostLinkSettings,
+                "192.168.0.20",
+                12345,
+                "UDP",
+                failures,
+                "HostLink simulator settings");
+
+            settingsWindow.Close();
+            settingsWindow = new PlcSettingsWindow(new PlcSettings
+            {
+                Protocol = "HostLink",
+                HostLinkProfile = "keyence:kv-8000-xym",
+            }.Normalize(), isRunning: false);
+            settingsWindow.Show();
+            settingsWindow.UpdateLayout();
+            PumpDispatcher();
+
+            if (settingsWindow.FindName("SimulatorCheckBox") is CheckBox unsupportedHostLinkCheck
+                && unsupportedHostLinkCheck.Visibility != Visibility.Collapsed)
+            {
+                failures.Add("HostLink simulator checkbox was visible for unsupported KV-8000 / XYM.");
+            }
+        }
+        catch (Exception ex)
+        {
+            failures.Add($"PLC simulator option smoke failed: {ex.GetType().Name}: {ex.Message}");
+        }
+        finally
+        {
+            settingsWindow?.Close();
+        }
+    }
+
+    private static void AssertSimulatorSettingsPreserved(
+        PlcSettingsWindow settingsWindow,
+        PlcSettings settings,
+        string expectedHost,
+        int expectedPort,
+        string expectedTransport,
+        List<string> failures,
+        string label)
+    {
+        AssertEqual(expectedHost, settings.Host, failures, $"{label} host");
+        AssertEqual(expectedTransport, settings.Transport, failures, $"{label} transport");
+        if (settings.Port != expectedPort)
+        {
+            failures.Add($"{label} port: expected '{expectedPort}', got '{settings.Port}'.");
+        }
+
+        if (!settings.UseSimulator)
+        {
+            failures.Add($"{label}: UseSimulator was not enabled.");
+        }
+
+        var clone = settings.Clone();
+        AssertEqual(expectedHost, clone.Host, failures, $"{label} cloned host");
+        AssertEqual(expectedTransport, clone.Transport, failures, $"{label} cloned transport");
+        if (clone.Port != expectedPort)
+        {
+            failures.Add($"{label} cloned port: expected '{expectedPort}', got '{clone.Port}'.");
+        }
+
+        if (settingsWindow.FindName("HostTextBox") is not TextBox hostTextBox
+            || hostTextBox.IsEnabled
+            || hostTextBox.Text != expectedHost)
+        {
+            failures.Add($"{label}: host editor was not preserved and disabled.");
+        }
+
+        if (settingsWindow.FindName("TransportCombo") is not ComboBox transportCombo
+            || transportCombo.IsEnabled
+            || transportCombo.SelectedValue as string != expectedTransport)
+        {
+            failures.Add($"{label}: transport editor was not preserved and disabled.");
+        }
+
+        if (settingsWindow.FindName("PortTextBox") is not TextBox portTextBox
+            || portTextBox.IsEnabled
+            || portTextBox.Text != expectedPort.ToString(CultureInfo.InvariantCulture))
+        {
+            failures.Add($"{label}: port editor was not preserved and disabled.");
         }
     }
 
@@ -606,6 +906,7 @@ internal static class Program
 
     private static void SmokeBulkAssignDeviceOptions(List<string> failures)
     {
+        BulkAssignWindow? bulkAssignWindow = null;
         try
         {
             AssertSequence(["X", "Y", "M", "L", "B"], BulkAssignWindow.DeviceOptions("SLMP", ModbusType.Coil), failures, "SLMP bool bulk devices");
@@ -617,10 +918,24 @@ internal static class Program
             AssertSequence(["R", "B", "MR", "LR", "X", "Y", "M", "L"], BulkAssignWindow.DeviceOptions("HostLink", ModbusType.DiscreteInput), failures, "HostLink input bulk devices");
             AssertSequence(["DM", "EM", "FM", "ZF", "W", "D", "E", "F"], BulkAssignWindow.DeviceOptions("HostLink", ModbusType.HoldingRegister), failures, "HostLink register bulk devices");
             AssertSequence(["DM", "EM", "FM", "ZF", "W", "D", "E", "F"], BulkAssignWindow.DeviceOptions("HostLink", ModbusType.InputRegister), failures, "HostLink input register bulk devices");
+
+            bulkAssignWindow = new BulkAssignWindow();
+            bulkAssignWindow.Show();
+            bulkAssignWindow.UpdateLayout();
+            PumpDispatcher();
+
+            if (bulkAssignWindow.FindName("IncrementTextBox") is not null)
+            {
+                failures.Add("Bulk assign increment input is still present.");
+            }
         }
         catch (Exception ex)
         {
             failures.Add($"Bulk assign device options smoke failed: {ex.GetType().Name}: {ex.Message}");
+        }
+        finally
+        {
+            bulkAssignWindow?.Close();
         }
     }
 

@@ -22,6 +22,10 @@ public sealed class PlcClientService : IAsyncDisposable
     {
         await DisconnectAsync().ConfigureAwait(false);
         var normalized = settings.Clone();
+        if (normalized.UseSimulator)
+        {
+            normalized.ApplySimulatorEndpoint();
+        }
 
         try
         {

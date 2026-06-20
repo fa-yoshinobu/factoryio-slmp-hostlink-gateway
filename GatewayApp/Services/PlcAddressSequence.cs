@@ -53,7 +53,7 @@ public static class PlcAddressSequence
         var nextLogical = (long)startLogical + offset;
         if (nextLogical < 0 || nextLogical > uint.MaxValue)
         {
-            error = "増分後の PLC アドレスが範囲外です。";
+            error = "PLC アドレスが範囲外です。";
             return false;
         }
 

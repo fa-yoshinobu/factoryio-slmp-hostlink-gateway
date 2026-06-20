@@ -188,7 +188,7 @@ public partial class MainWindow : Window
 
         if (dialog.ShowDialog() == true)
         {
-            ViewModel.ApplyBulkAssign(dialog.TargetModbusType, dialog.PlcPrefix, dialog.StartNumberText, dialog.Increment);
+            ViewModel.ApplyBulkAssign(dialog.TargetModbusType, dialog.PlcPrefix, dialog.StartNumberText, increment: 1);
         }
     }
 

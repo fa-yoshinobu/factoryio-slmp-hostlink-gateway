@@ -11,7 +11,8 @@ public sealed class SettingsService
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter() },
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+        Converters = { new JsonStringEnumConverter(allowIntegerValues: false) },
     };
 
     public string SettingsPath { get; } = Path.Combine(

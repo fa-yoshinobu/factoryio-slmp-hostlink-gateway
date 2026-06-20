@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="PLC通信設定"
         Width="420"
-        Height="380"
+        Height="420"
         WindowStartupLocation="CenterOwner">
     <DockPanel Background="#ebebeb">
         <TextBlock x:Name="WarningText"
@@ -27,6 +27,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="120" />
@@ -40,7 +41,11 @@
             </StackPanel>
 
             <TextBlock Grid.Row="1" Grid.Column="0" Text="ホスト" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
-            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" />
+            <TextBox x:Name="HostTextBox"
+                     Grid.Row="1"
+                     Grid.Column="1"
+                     Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}"
+                     Margin="0,0,0,10" />
 
             <TextBlock Grid.Row="2" Grid.Column="0" Text="通信方式" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <ComboBox x:Name="TransportCombo"
@@ -68,7 +73,16 @@
                       Grid.Row="6"
                       Grid.Column="1"
                       DisplayMemberPath="Label"
-                      SelectedValuePath="Value" />
+                      SelectedValuePath="Value"
+                      SelectionChanged="ProfileCombo_SelectionChanged" />
+
+            <CheckBox x:Name="SimulatorCheckBox"
+                      Grid.Row="7"
+                      Grid.Column="1"
+                      Margin="0,10,0,0"
+                      Checked="SimulatorCheckBox_Changed"
+                      Unchecked="SimulatorCheckBox_Changed"
+                      Visibility="Collapsed" />
         </Grid>
     </DockPanel>
 </Window>
