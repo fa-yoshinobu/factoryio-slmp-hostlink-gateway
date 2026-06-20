@@ -37,7 +37,7 @@ public sealed class GatewayService : IAsyncDisposable
         }
         catch
         {
-            await StopUnlockedAsync();
+            await StopAfterFailedStartAsync();
             throw;
         }
         finally
@@ -198,9 +198,29 @@ public sealed class GatewayService : IAsyncDisposable
     {
         CancelRun();
         _modbus.Stop();
-        await _plc.DisconnectAsync();
+        try
+        {
+            await _plc.DisconnectAsync();
+        }
+        catch (Exception ex) when (CommunicationExceptionClassifier.IsExpectedLocalStop(ex))
+        {
+        }
+
         _runCts?.Dispose();
         _runCts = null;
+    }
+
+    private async Task StopAfterFailedStartAsync()
+    {
+        try
+        {
+            await StopUnlockedAsync();
+        }
+        catch
+        {
+            _runCts?.Dispose();
+            _runCts = null;
+        }
     }
 
     private void CancelRun()

@@ -48,9 +48,6 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     private string _plcStatus = "PLC 未接続";
 
     [ObservableProperty]
-    private DateTime _clock = DateTime.Now;
-
-    [ObservableProperty]
     private string _lastError = string.Empty;
 
     [ObservableProperty]
@@ -83,8 +80,6 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     public ObservableCollection<LogEntry> ErrorLogs { get; } = [];
 
     public Array ModbusTypeValues { get; } = Enum.GetValues<ModbusType>();
-
-    public string ClockText => Clock.ToString("HH:mm:ss", CultureInfo.CurrentCulture);
 
     public string WindowTitle
     {
@@ -353,7 +348,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
             entry.IsForceEditing = false;
             await ApplyForceAsync(entry).ConfigureAwait(true);
         }
-        catch (OperationCanceledException) when (!IsRunning)
+        catch (Exception ex) when (!IsRunning && CommunicationExceptionClassifier.IsExpectedLocalStop(ex))
         {
         }
         catch (Exception ex)
@@ -369,6 +364,11 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     public void ReportException(Exception exception)
     {
+        if (!IsRunning && CommunicationExceptionClassifier.IsExpectedLocalStop(exception))
+        {
+            return;
+        }
+
         ReportError($"{exception.GetType().Name}: {exception.Message}");
     }
 
@@ -394,12 +394,6 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     {
         _pollTimer.Stop();
         await _gatewayService.DisposeAsync().ConfigureAwait(false);
-    }
-
-    partial void OnClockChanged(DateTime value)
-    {
-        OnPropertyChanged(nameof(ClockText));
-        OnPropertyChanged(nameof(ModbusClientText));
     }
 
     partial void OnIsRunningChanged(bool value)
@@ -470,7 +464,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     private async void PollTimerOnTick(object? sender, EventArgs e)
     {
-        Clock = DateTime.Now;
+        OnPropertyChanged(nameof(ModbusClientText));
         if (!IsRunning || _pollInFlight)
         {
             return;
@@ -482,7 +476,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
             await _gatewayService.PollPlcAsync(Mappings).ConfigureAwait(true);
             ClearStatus();
         }
-        catch (OperationCanceledException) when (!IsRunning)
+        catch (Exception ex) when (!IsRunning && CommunicationExceptionClassifier.IsExpectedLocalStop(ex))
         {
         }
         catch (Exception ex)
@@ -503,9 +497,18 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         ModbusStatus = "Modbus TCP 停止中";
         PlcStatus = "PLC 切断中";
 
-        await _gatewayService.StopAsync().ConfigureAwait(true);
-        ModbusStatus = "Modbus TCP 停止";
-        PlcStatus = "PLC 未接続";
+        try
+        {
+            await _gatewayService.StopAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex) when (CommunicationExceptionClassifier.IsExpectedLocalStop(ex))
+        {
+        }
+        finally
+        {
+            ModbusStatus = "Modbus TCP 停止";
+            PlcStatus = "PLC 未接続";
+        }
     }
 
     private async Task ApplyForceAsync(MappingEntry entry)
@@ -520,7 +523,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         {
             await _gatewayService.ForceWriteAsync(entry).ConfigureAwait(true);
         }
-        catch (OperationCanceledException) when (!IsRunning)
+        catch (Exception ex) when (!IsRunning && CommunicationExceptionClassifier.IsExpectedLocalStop(ex))
         {
         }
         catch (Exception ex)

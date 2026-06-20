@@ -1,4 +1,5 @@
 using GatewayApp.ViewModels;
+using GatewayApp.Services;
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
@@ -19,6 +20,12 @@ public partial class App : Application
 
     private static void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
+        if (CommunicationExceptionClassifier.IsExpectedLocalStop(e.Exception))
+        {
+            e.Handled = true;
+            return;
+        }
+
         ReportException(e.Exception);
         e.Handled = true;
     }
@@ -27,12 +34,23 @@ public partial class App : Application
     {
         if (e.ExceptionObject is Exception exception)
         {
+            if (CommunicationExceptionClassifier.IsExpectedLocalStop(exception))
+            {
+                return;
+            }
+
             WriteExceptionLog(exception);
         }
     }
 
     private static void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
     {
+        if (CommunicationExceptionClassifier.IsExpectedLocalStop(e.Exception))
+        {
+            e.SetObserved();
+            return;
+        }
+
         ReportException(e.Exception);
         e.SetObserved();
     }

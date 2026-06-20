@@ -1,5 +1,6 @@
 using GatewayApp.Models;
 using PlcComm.KvHostLink;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -8,8 +9,16 @@ namespace GatewayApp.Views.Dialogs;
 
 public sealed record PlcProfileOption(string Value, string Label);
 
+public sealed record TransportOption(string Value, string Label);
+
 public partial class PlcSettingsWindow : Window
 {
+    private static readonly TransportOption[] TransportOptions =
+    [
+        new("TCP", "TCP"),
+        new("UDP", "UDP"),
+    ];
+
     private static readonly PlcProfileOption[] SlmpProfiles =
     [
         new("melsec:iq-r", "iQ-R"),
@@ -28,12 +37,17 @@ public partial class PlcSettingsWindow : Window
             .Select(profile => new PlcProfileOption(profile, FormatHostLinkProfile(profile)))
             .ToArray();
 
+    private string _currentProtocol;
+
     public PlcSettingsWindow(PlcSettings settings, bool isRunning)
     {
         InitializeComponent();
         Settings = settings.Normalize();
         DataContext = Settings;
+        _currentProtocol = Settings.Protocol;
 
+        TransportCombo.ItemsSource = TransportOptions;
+        TransportCombo.SelectedValue = Settings.Transport;
         SlmpRadio.IsChecked = Settings.Protocol.Equals("SLMP", StringComparison.OrdinalIgnoreCase);
         HostLinkRadio.IsChecked = !SlmpRadio.IsChecked;
         SaveButton.Visibility = isRunning ? Visibility.Collapsed : Visibility.Visible;
@@ -55,7 +69,10 @@ public partial class PlcSettingsWindow : Window
             return;
         }
 
-        Settings.Protocol = SlmpRadio.IsChecked == true ? "SLMP" : "HostLink";
+        var protocol = SlmpRadio.IsChecked == true ? "SLMP" : "HostLink";
+        ApplyProtocolDefaultPort(_currentProtocol, protocol);
+        Settings.Protocol = protocol;
+        _currentProtocol = protocol;
         UpdateProfileSelector();
     }
 
@@ -77,6 +94,7 @@ public partial class PlcSettingsWindow : Window
     private void Save_Click(object sender, RoutedEventArgs e)
     {
         Settings.Protocol = SlmpRadio.IsChecked == true ? "SLMP" : "HostLink";
+        Settings.Transport = TransportCombo.SelectedValue as string ?? Settings.Transport;
         if (Settings.Protocol.Equals("SLMP", StringComparison.OrdinalIgnoreCase))
         {
             Settings.SlmpProfile = ProfileCombo.SelectedValue as string ?? PlcSettings.DefaultSlmpProfile;
@@ -88,6 +106,24 @@ public partial class PlcSettingsWindow : Window
 
         Settings.Normalize();
         DialogResult = true;
+    }
+
+    private void ApplyProtocolDefaultPort(string previousProtocol, string nextProtocol)
+    {
+        if (previousProtocol.Equals(nextProtocol, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var previousDefault = PlcSettings.DefaultPortForProtocol(previousProtocol);
+        var nextDefault = PlcSettings.DefaultPortForProtocol(nextProtocol);
+        if (Settings.Port != previousDefault)
+        {
+            return;
+        }
+
+        Settings.Port = nextDefault;
+        PortTextBox.Text = nextDefault.ToString(CultureInfo.InvariantCulture);
     }
 
     private static IReadOnlyList<PlcProfileOption> WithCurrentOption(

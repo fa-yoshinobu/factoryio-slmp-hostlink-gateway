@@ -165,8 +165,6 @@
         </Grid>
 
         <StatusBar DockPanel.Dock="Bottom" Background="#222" Foreground="#b0b0b0">
-            <TextBlock Text="{Binding ClockText}" FontFamily="Consolas" />
-            <Separator />
             <TextBlock Text="{Binding ModbusStatus}" />
             <Separator />
             <TextBlock Text="{Binding ModbusClientText}" />

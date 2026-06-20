@@ -28,12 +28,17 @@ public sealed class PlcSettings
 {
     public const string DefaultSlmpProfile = "melsec:iq-r";
     public const string DefaultHostLinkProfile = "keyence:kv-8000";
+    public const string DefaultTransport = "TCP";
+    public const int DefaultSlmpPort = 1025;
+    public const int DefaultHostLinkPort = 8501;
 
     public string Protocol { get; set; } = "SLMP";
 
     public string Host { get; set; } = "192.168.250.100";
 
-    public int Port { get; set; } = 1025;
+    public int Port { get; set; } = DefaultSlmpPort;
+
+    public string Transport { get; set; } = DefaultTransport;
 
     public int TimeoutSec { get; set; } = 3;
 
@@ -50,6 +55,7 @@ public sealed class PlcSettings
             Protocol = string.IsNullOrWhiteSpace(Protocol) ? "SLMP" : Protocol,
             Host = string.IsNullOrWhiteSpace(Host) ? "192.168.250.100" : Host,
             Port = Port,
+            Transport = NormalizeTransport(Transport),
             TimeoutSec = TimeoutSec,
             PollingMs = PollingMs,
             SlmpProfile = NormalizeSlmpProfile(SlmpProfile),
@@ -61,7 +67,8 @@ public sealed class PlcSettings
     {
         Protocol = string.IsNullOrWhiteSpace(Protocol) ? "SLMP" : Protocol;
         Host = string.IsNullOrWhiteSpace(Host) ? "192.168.250.100" : Host;
-        Port = Port is < 1 or > 65535 ? 1025 : Port;
+        Port = Port is < 1 or > 65535 ? DefaultPortForProtocol(Protocol) : Port;
+        Transport = NormalizeTransport(Transport);
         TimeoutSec = Math.Max(1, TimeoutSec);
         PollingMs = Math.Max(10, PollingMs);
         SlmpProfile = NormalizeSlmpProfile(SlmpProfile);
@@ -83,6 +90,24 @@ public sealed class PlcSettings
             "QnU" => "melsec:qnu",
             "QCPU" or "Q Series" => "melsec:qcpu",
             "LCPU" or "L Series" => "melsec:lcpu",
+            var text => text,
+        };
+    }
+
+    public static int DefaultPortForProtocol(string protocol)
+    {
+        return protocol.Equals("HostLink", StringComparison.OrdinalIgnoreCase)
+            ? DefaultHostLinkPort
+            : DefaultSlmpPort;
+    }
+
+    public static string NormalizeTransport(string? value)
+    {
+        return value?.Trim().ToUpperInvariant() switch
+        {
+            null or "" => DefaultTransport,
+            "TCP" => "TCP",
+            "UDP" => "UDP",
             var text => text,
         };
     }
