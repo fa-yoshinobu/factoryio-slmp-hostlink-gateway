@@ -43,7 +43,7 @@
             <TextBlock Grid.Row="2" Grid.Column="0" Text="ユニット ID" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding UnitId, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" />
 
-            <TextBlock Grid.Row="3" Grid.Column="0" Text="Float 表示倍率" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
+            <TextBlock Grid.Row="3" Grid.Column="0" Text="Scale" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding RealScale, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" />
 
             <TextBlock Grid.Row="4" Grid.Column="0" Text="Coil 最大アドレス" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />

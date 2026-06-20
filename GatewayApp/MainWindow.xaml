@@ -278,6 +278,7 @@
                                                     Tag="{Binding Left}"
                                                     Style="{StaticResource MonitorValueButton}"
                                                     Foreground="{Binding Left, Converter={StaticResource EntryValueBrushConverter}}"
+                                                    ToolTip="{Binding Left.RegisterIntegerToolTip}"
                                                     Visibility="{Binding Left.IsForceEditing, Converter={StaticResource BoolVisibilityConverter}, ConverterParameter=Invert}"
                                                     Click="RegisterValue_Click" />
                                             <TextBox Text="{Binding Left.ForceEditText, UpdateSourceTrigger=PropertyChanged}"
@@ -300,6 +301,7 @@
                                                     Tag="{Binding Right}"
                                                     Style="{StaticResource MonitorValueButton}"
                                                     Foreground="{Binding Right, Converter={StaticResource EntryValueBrushConverter}}"
+                                                    ToolTip="{Binding Right.RegisterIntegerToolTip}"
                                                     Visibility="{Binding Right.IsForceEditing, Converter={StaticResource BoolVisibilityConverter}, ConverterParameter=Invert}"
                                                     Click="RegisterValue_Click" />
                                             <TextBox Text="{Binding Right.ForceEditText, UpdateSourceTrigger=PropertyChanged}"

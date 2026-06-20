@@ -12,7 +12,7 @@ public sealed class EntryValueBrushConverter : IValueConverter
     {
         if (value is not MappingEntry entry)
         {
-            return new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55));
+            return new SolidColorBrush(Color.FromRgb(0xff, 0xff, 0xff));
         }
 
         if (entry.IsForceApplied)
@@ -22,12 +22,12 @@ public sealed class EntryValueBrushConverter : IValueConverter
 
         if (entry.IsRegister)
         {
-            return new SolidColorBrush(Color.FromRgb(0xff, 0xff, 0xff));
+            return new SolidColorBrush(Color.FromRgb(0x4e, 0xe0, 0x72));
         }
 
         return entry.EffectiveRawValue != 0
-            ? new SolidColorBrush(Color.FromRgb(0x00, 0xbc, 0xd4))
-            : new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55));
+            ? new SolidColorBrush(Color.FromRgb(0x4e, 0xe0, 0x72))
+            : new SolidColorBrush(Color.FromRgb(0xff, 0xff, 0xff));
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

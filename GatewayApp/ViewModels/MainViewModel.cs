@@ -176,12 +176,9 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
             return;
         }
 
-        entry.ForceValue = entry.ForceValue switch
-        {
-            null => 1,
-            1 => 0,
-            _ => null,
-        };
+        var current = NormalizeBoolRaw(entry.RawValue);
+        var forced = entry.ForceValue.HasValue ? NormalizeBoolRaw(entry.ForceValue.Value) : current;
+        entry.ForceValue = forced == current ? InvertBoolRaw(current) : current;
 
         await ApplyForceAsync(entry).ConfigureAwait(true);
     }
@@ -360,6 +357,16 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         }
 
         OnPropertyChanged(nameof(ForceText));
+    }
+
+    private static int NormalizeBoolRaw(int rawValue)
+    {
+        return rawValue == 0 ? 0 : 1;
+    }
+
+    private static int InvertBoolRaw(int rawValue)
+    {
+        return NormalizeBoolRaw(rawValue) == 0 ? 1 : 0;
     }
 
     private async void PollTimerOnTick(object? sender, EventArgs e)

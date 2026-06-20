@@ -90,9 +90,14 @@ internal static class Program
             viewModel.ApplyModbusSettings(new ModbusSettings
             {
                 RealScale = 100,
+                MaxCoilAddress = 0,
                 MaxHoldingRegisterAddress = 1,
                 MaxInputRegisterAddress = 1,
             });
+
+            var coil = viewModel.Mappings.Single(x =>
+                x.ModbusType == ModbusType.Coil && x.ModbusAddress == 0);
+            coil.RawValue = 0;
 
             var holding = viewModel.Mappings.Single(x =>
                 x.ModbusType == ModbusType.HoldingRegister && x.ModbusAddress == 0);
@@ -114,6 +119,25 @@ internal static class Program
                 failures.Add($"Force enable did not inherit input register value. Expected 125, got {input.ForceValue}.");
             }
 
+            if (coil.ForceValue != 0)
+            {
+                failures.Add($"Force enable did not inherit coil value. Expected 0, got {coil.ForceValue}.");
+            }
+
+            viewModel.CycleBoolForceAsync(coil).GetAwaiter().GetResult();
+
+            if (coil.ForceValue != 1)
+            {
+                failures.Add($"Coil force did not toggle from inherited current value. Expected 1, got {coil.ForceValue}.");
+            }
+
+            viewModel.CycleBoolForceAsync(coil).GetAwaiter().GetResult();
+
+            if (coil.ForceValue != 0)
+            {
+                failures.Add($"Coil force did not toggle back to inherited current value. Expected 0, got {coil.ForceValue}.");
+            }
+
             holding.DisplayType = DisplayType.Int16;
             viewModel.BeginRegisterEdit(holding);
             holding.ForceEditText = "1234";
@@ -132,6 +156,26 @@ internal static class Program
             if (input.ForceValue != 125)
             {
                 failures.Add($"Input register force value mismatch. Expected 125, got {input.ForceValue}.");
+            }
+
+            input.RealScale = 10;
+            viewModel.BeginRegisterEdit(input);
+            input.ForceEditText = "10.00";
+            viewModel.CommitRegisterForceAsync(input, clear: false).GetAwaiter().GetResult();
+
+            if (input.ForceValue != 100)
+            {
+                failures.Add($"Scale 10 input register force value mismatch. Expected 100, got {input.ForceValue}.");
+            }
+
+            input.RealScale = 100;
+            viewModel.BeginRegisterEdit(input);
+            input.ForceEditText = "10.00";
+            viewModel.CommitRegisterForceAsync(input, clear: false).GetAwaiter().GetResult();
+
+            if (input.ForceValue != 1000)
+            {
+                failures.Add($"Scale 100 input register force value mismatch. Expected 1000, got {input.ForceValue}.");
             }
 
             viewModel.BeginRegisterEdit(input);
@@ -216,8 +260,25 @@ internal static class Program
                 RealScale = 100,
             };
 
+            entry.RawValue = 1000;
+            AssertEqual("10.00", entry.DisplayValue, failures, "Scale 100 display value");
             AssertEqual("1000 (10.00)", entry.FormatRawWithDisplay(1000), failures, "Scaled raw 1000");
             AssertEqual("1010 (10.10)", entry.FormatRawWithDisplay(1010), failures, "Scaled raw 1010");
+            AssertEqual("-1000 (-10.00)", entry.FormatRawWithDisplay(unchecked((ushort)(short)-1000)), failures, "Scaled raw -1000");
+            AssertEqual("Integer: 1000", entry.RegisterIntegerToolTip, failures, "Scaled integer tooltip 1000");
+
+            entry.RealScale = 10;
+            AssertEqual("100.00", entry.DisplayValue, failures, "Scale 10 display value");
+            AssertEqual("1000 (100.00)", entry.FormatRawWithDisplay(1000), failures, "Scale 10 raw remains 1000");
+            AssertEqual("Integer: 1000", entry.RegisterIntegerToolTip, failures, "Scale 10 integer tooltip remains 1000");
+
+            entry.RealScale = 100;
+            entry.ForceEnabled = true;
+            entry.ForceValue = unchecked((ushort)(short)-1000);
+            AssertEqual("Integer: -1000", entry.RegisterIntegerToolTip, failures, "Forced scaled integer tooltip -1000");
+
+            entry.DisplayType = DisplayType.Int16;
+            AssertEqual("-1", entry.FormatRawWithDisplay(unchecked((ushort)(short)-1)), failures, "Int16 raw -1");
         }
         catch (Exception ex)
         {

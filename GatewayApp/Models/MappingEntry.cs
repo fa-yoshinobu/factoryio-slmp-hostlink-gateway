@@ -124,6 +124,20 @@ public partial class MappingEntry : ObservableObject
         }
     }
 
+    public string RegisterIntegerToolTip
+    {
+        get
+        {
+            if (!IsRegister)
+            {
+                return string.Empty;
+            }
+
+            var signed = unchecked((short)(ushort)EffectiveRawValue);
+            return $"Integer: {signed.ToString(CultureInfo.InvariantCulture)}";
+        }
+    }
+
     public string FormatRawWithDisplay(int rawValue)
     {
         if (!IsRegister)
@@ -132,14 +146,14 @@ public partial class MappingEntry : ObservableObject
         }
 
         var normalized = unchecked((ushort)rawValue);
+        var signed = unchecked((short)normalized);
         if (DisplayType != DisplayType.ScaledReal)
         {
-            return normalized.ToString(CultureInfo.InvariantCulture);
+            return signed.ToString(CultureInfo.InvariantCulture);
         }
 
-        var signed = unchecked((short)normalized);
         var display = ((double)signed / Math.Max(1, RealScale)).ToString("0.00", CultureInfo.InvariantCulture);
-        return $"{normalized} ({display})";
+        return $"{signed} ({display})";
     }
 
     public string ForceSummary => ForceValue is null
@@ -216,6 +230,7 @@ public partial class MappingEntry : ObservableObject
         OnPropertyChanged(nameof(IsForceApplied));
         OnPropertyChanged(nameof(EffectiveRawValue));
         OnPropertyChanged(nameof(DisplayValue));
+        OnPropertyChanged(nameof(RegisterIntegerToolTip));
         OnPropertyChanged(nameof(ForceSummary));
         OnPropertyChanged(nameof(LastWrittenText));
     }

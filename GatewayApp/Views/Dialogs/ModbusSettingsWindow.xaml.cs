@@ -38,7 +38,7 @@ public partial class ModbusSettingsWindow : Window
 
         if (Settings.RealScale < 1)
         {
-            MessageBox.Show(this, "Float 表示倍率は 1 以上で入力してください。", "Modbus通信設定", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, "Scale は 1 以上で入力してください。", "Modbus通信設定", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 

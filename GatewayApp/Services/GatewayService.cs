@@ -122,7 +122,6 @@ public sealed class GatewayService : IAsyncDisposable
 
             if (entry.Direction == DataDirection.FromPlc)
             {
-                TraceReported?.Invoke($"{entry.ModbusLabel} はFactory I/Oへ返す側のためPLCへは書きません。");
                 entry.LastWritten = DateTime.Now;
                 return;
             }
@@ -156,24 +155,16 @@ public sealed class GatewayService : IAsyncDisposable
 
     private async Task<int?> WriteAndCheckAsync(MappingEntry entry, CancellationToken cancellationToken)
     {
-        _plc.FrameTraceEnabled = true;
-        try
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            TraceReported?.Invoke(
-                $"PLC WRITE {_plc.ActiveProtocol} {(entry.IsRegister ? "U16" : "BIT")} {entry.PlcAddress} <= {FormatRaw(entry, entry.EffectiveRawValue)}");
-            await _plc.WriteRawAsync(entry, entry.EffectiveRawValue, cancellationToken);
-            TraceReported?.Invoke("PLC WRITE API OK");
+        cancellationToken.ThrowIfCancellationRequested();
+        TraceReported?.Invoke(
+            $"PLC WRITE {_plc.ActiveProtocol} {(entry.IsRegister ? "S16" : "BIT")} {entry.PlcAddress} <= {FormatRaw(entry, entry.EffectiveRawValue)}");
+        await _plc.WriteRawAsync(entry, entry.EffectiveRawValue, cancellationToken);
+        TraceReported?.Invoke("PLC WRITE API OK");
 
-            var plcValue = await _plc.ReadRawAsync(entry, cancellationToken);
-            TraceReported?.Invoke(
-                $"PLC CHECK {_plc.ActiveProtocol} {(entry.IsRegister ? "U16" : "BIT")} {entry.PlcAddress} => {(plcValue.HasValue ? FormatRaw(entry, plcValue.Value) : "null")}");
-            return plcValue;
-        }
-        finally
-        {
-            _plc.FrameTraceEnabled = false;
-        }
+        var plcValue = await _plc.ReadRawAsync(entry, cancellationToken);
+        TraceReported?.Invoke(
+            $"PLC CHECK {_plc.ActiveProtocol} {(entry.IsRegister ? "S16" : "BIT")} {entry.PlcAddress} => {(plcValue.HasValue ? FormatRaw(entry, plcValue.Value) : "null")}");
+        return plcValue;
     }
 
     private static bool RawMatches(MappingEntry entry, int left, int right)

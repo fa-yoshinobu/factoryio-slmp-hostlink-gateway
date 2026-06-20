@@ -17,8 +17,6 @@ public sealed class PlcClientService : IAsyncDisposable
         ? "SLMP"
         : _hostLink is not null ? "HostLink" : "None";
 
-    public bool FrameTraceEnabled { get; set; }
-
     public async Task ConnectAsync(PlcSettings settings, CancellationToken cancellationToken = default)
     {
         await DisconnectAsync().ConfigureAwait(false);
@@ -32,7 +30,6 @@ public sealed class PlcClientService : IAsyncDisposable
                 Timeout = TimeSpan.FromSeconds(Math.Max(1, settings.TimeoutSec)),
             };
             _slmp = await SlmpClientFactory.OpenAndConnectAsync(options, cancellationToken).ConfigureAwait(false);
-            _slmp.InnerClient.TraceHook = OnSlmpTrace;
             TraceReported?.Invoke(
                 $"PLC CONNECT SLMP profile={_slmp.PlcProfile} frame={_slmp.FrameType} mode={_slmp.CompatibilityMode} target={_slmp.TargetAddress}");
             return;
@@ -43,7 +40,6 @@ public sealed class PlcClientService : IAsyncDisposable
             settings.Port,
             TimeSpan.FromSeconds(Math.Max(1, settings.TimeoutSec)));
         _hostLink = await KvHostLinkClientFactory.OpenAndConnectAsync(hostLinkOptions, cancellationToken).ConfigureAwait(false);
-        _hostLink.TraceHook = OnHostLinkTrace;
         TraceReported?.Invoke($"PLC CONNECT HostLink host={settings.Host}:{settings.Port}");
     }
 
@@ -51,14 +47,12 @@ public sealed class PlcClientService : IAsyncDisposable
     {
         if (_slmp is not null)
         {
-            _slmp.InnerClient.TraceHook = null;
             await _slmp.DisposeAsync().ConfigureAwait(false);
             _slmp = null;
         }
 
         if (_hostLink is not null)
         {
-            _hostLink.TraceHook = null;
             await _hostLink.DisposeAsync().ConfigureAwait(false);
             _hostLink = null;
         }
@@ -75,7 +69,7 @@ public sealed class PlcClientService : IAsyncDisposable
         {
             if (entry.IsRegister)
             {
-                var registerValue = await _slmp.ReadTypedAsync(entry.PlcAddress, "U", cancellationToken).ConfigureAwait(false);
+                var registerValue = await _slmp.ReadTypedAsync(entry.PlcAddress, "S", cancellationToken).ConfigureAwait(false);
                 return ConvertPlcValueToRaw(registerValue);
             }
 
@@ -87,7 +81,7 @@ public sealed class PlcClientService : IAsyncDisposable
         {
             if (entry.IsRegister)
             {
-                var registerValue = await _hostLink.ReadTypedAsync(entry.PlcAddress, "U", cancellationToken).ConfigureAwait(false);
+                var registerValue = await _hostLink.ReadTypedAsync(entry.PlcAddress, "S", cancellationToken).ConfigureAwait(false);
                 return ConvertPlcValueToRaw(registerValue);
             }
 
@@ -109,7 +103,7 @@ public sealed class PlcClientService : IAsyncDisposable
         {
             if (entry.IsRegister)
             {
-                await _slmp.WriteTypedAsync(entry.PlcAddress, "U", unchecked((ushort)rawValue), cancellationToken)
+                await _slmp.WriteTypedAsync(entry.PlcAddress, "S", ConvertRawToSignedWord(rawValue), cancellationToken)
                     .ConfigureAwait(false);
                 return;
             }
@@ -128,7 +122,7 @@ public sealed class PlcClientService : IAsyncDisposable
             }
             else
             {
-                await _hostLink.WriteTypedAsync(entry.PlcAddress, "U", unchecked((ushort)rawValue), cancellationToken)
+                await _hostLink.WriteTypedAsync(entry.PlcAddress, "S", ConvertRawToSignedWord(rawValue), cancellationToken)
                     .ConfigureAwait(false);
             }
 
@@ -150,7 +144,7 @@ public sealed class PlcClientService : IAsyncDisposable
 
     private static string GetSlmpWriteDType(MappingEntry entry)
     {
-        return entry.IsBool ? "BIT" : "U";
+        return entry.IsBool ? "BIT" : "S";
     }
 
     private static string GetHostLinkDType(MappingEntry entry)
@@ -160,7 +154,12 @@ public sealed class PlcClientService : IAsyncDisposable
 
     private static object ConvertRawForWrite(MappingEntry entry, int rawValue)
     {
-        return entry.IsBool ? rawValue != 0 : unchecked((ushort)rawValue);
+        return entry.IsBool ? rawValue != 0 : ConvertRawToSignedWord(rawValue);
+    }
+
+    private static short ConvertRawToSignedWord(int rawValue)
+    {
+        return unchecked((short)(ushort)rawValue);
     }
 
     private static int ConvertPlcValueToRaw(object value)
@@ -174,26 +173,6 @@ public sealed class PlcClientService : IAsyncDisposable
             uint u => unchecked((ushort)u),
             _ => Convert.ToInt32(value),
         };
-    }
-
-    private void OnSlmpTrace(SlmpTraceFrame frame)
-    {
-        if (!FrameTraceEnabled)
-        {
-            return;
-        }
-
-        TraceReported?.Invoke($"SLMP FRAME {frame.Direction} {Convert.ToHexString(frame.Data)}");
-    }
-
-    private void OnHostLinkTrace(HostLinkTraceFrame frame)
-    {
-        if (!FrameTraceEnabled)
-        {
-            return;
-        }
-
-        TraceReported?.Invoke($"HostLink FRAME {frame.Direction} {Convert.ToHexString(frame.Data)}");
     }
 
     private static SlmpPlcProfile ParseSlmpProfile(string text)
