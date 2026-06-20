@@ -15,24 +15,39 @@ public sealed class ModbusSlaveService : IDisposable
 
     public SlaveDataStore DataStore { get; } = new();
 
-    public async Task StartAsync(ModbusSettings settings)
+    public event Action<Exception>? UnexpectedExceptionReported;
+
+    public int ConnectedClientCount => _network is IModbusTcpSlaveNetwork tcpNetwork
+        ? tcpNetwork.Masters.Count
+        : 0;
+
+    public Task StartAsync(ModbusSettings settings)
     {
         Stop();
 
         var address = IPAddress.Parse(settings.ListenIp);
-        var listener = new TcpListener(address, settings.Port);
-        var factory = new ModbusFactory();
-        _network = factory.CreateSlaveNetwork(listener);
-        _network.AddSlave(factory.CreateSlave(settings.UnitId, DataStore));
-
-        _listenCts = new CancellationTokenSource();
-        _listenTask = _network.ListenAsync(_listenCts.Token);
-        _ = ObserveListenTaskAsync(_listenTask);
-
-        await Task.Delay(50).ConfigureAwait(false);
-        if (_listenTask.IsFaulted)
+        TcpListener? listener = null;
+        try
         {
-            throw _listenTask.Exception?.GetBaseException() ?? new InvalidOperationException("Modbus TCP 起動に失敗しました。");
+            listener = new TcpListener(address, settings.Port);
+            listener.Start();
+
+            var factory = new ModbusFactory();
+            _network = factory.CreateSlaveNetwork(listener);
+            _network.AddSlave(factory.CreateSlave(settings.UnitId, DataStore));
+
+            _listenCts = new CancellationTokenSource();
+            _listenTask = _network.ListenAsync(_listenCts.Token);
+            _ = ObserveListenTaskAsync(_listenTask);
+            return _listenTask.IsFaulted
+                ? Task.FromException(_listenTask.Exception?.GetBaseException() ?? new InvalidOperationException("Modbus TCP 起動に失敗しました。"))
+                : Task.CompletedTask;
+        }
+        catch
+        {
+            listener?.Stop();
+            Stop();
+            throw;
         }
     }
 
@@ -93,7 +108,7 @@ public sealed class ModbusSlaveService : IDisposable
         Stop();
     }
 
-    private static async Task ObserveListenTaskAsync(Task listenTask)
+    private async Task ObserveListenTaskAsync(Task listenTask)
     {
         try
         {
@@ -110,6 +125,10 @@ public sealed class ModbusSlaveService : IDisposable
         }
         catch (InvalidOperationException)
         {
+        }
+        catch (Exception ex)
+        {
+            UnexpectedExceptionReported?.Invoke(ex);
         }
     }
 

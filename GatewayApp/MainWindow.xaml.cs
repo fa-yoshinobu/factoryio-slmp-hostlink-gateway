@@ -14,6 +14,7 @@ namespace GatewayApp;
 public partial class MainWindow : Window
 {
     private LogWindow? _logWindow;
+    private bool _closingAfterCleanup;
 
     private MainViewModel ViewModel => (MainViewModel)DataContext;
 
@@ -158,20 +159,36 @@ public partial class MainWindow : Window
 
         if (dialog.ShowDialog() == true)
         {
+            var removeCount = ViewModel.CountMappingsAboveModbusLimits(dialog.Settings);
+            if (removeCount > 0)
+            {
+                var result = MessageBox.Show(
+                    this,
+                    $"最大アドレスを小さくすると、範囲外のマッピング {removeCount} 件が削除されます。続行しますか？",
+                    "Modbus通信設定",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (result != MessageBoxResult.Yes)
+                {
+                    return;
+                }
+            }
+
             ViewModel.ApplyModbusSettings(dialog.Settings);
         }
     }
 
     private void BulkAssign_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new BulkAssignWindow
+        var dialog = new BulkAssignWindow(ViewModel.Plc)
         {
             Owner = this,
         };
 
         if (dialog.ShowDialog() == true)
         {
-            ViewModel.ApplyBulkAssign(dialog.TargetModbusType, dialog.PlcPrefix, dialog.StartNumber, dialog.Increment);
+            ViewModel.ApplyBulkAssign(dialog.TargetModbusType, dialog.PlcPrefix, dialog.StartNumberText, dialog.Increment);
         }
     }
 
@@ -189,6 +206,14 @@ public partial class MainWindow : Window
         };
         _logWindow.Closed += (_, _) => _logWindow = null;
         _logWindow.Show();
+    }
+
+    private void About_Click(object sender, RoutedEventArgs e)
+    {
+        new AboutWindow
+        {
+            Owner = this,
+        }.ShowDialog();
     }
 
     private async void Led_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -240,13 +265,13 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void RegisterForceTextBox_LostFocus(object sender, RoutedEventArgs e)
+    private void RegisterForceTextBox_LostFocus(object sender, RoutedEventArgs e)
     {
         try
         {
             if (sender is FrameworkElement { Tag: MappingEntry entry, IsVisible: true } && entry.IsForceEditing)
             {
-                await ViewModel.CommitRegisterForceAsync(entry, clear: false);
+                entry.IsForceEditing = false;
             }
         }
         catch (Exception ex)
@@ -303,7 +328,40 @@ public partial class MainWindow : Window
 
     private async void Window_Closing(object? sender, CancelEventArgs e)
     {
+        if (_closingAfterCleanup)
+        {
+            return;
+        }
+
+        if (ViewModel.IsDirty)
+        {
+            var result = MessageBox.Show(
+                this,
+                "未保存の変更があります。保存せずに終了しますか？",
+                "終了",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result != MessageBoxResult.Yes)
+            {
+                e.Cancel = true;
+                return;
+            }
+        }
+
+        e.Cancel = true;
+        _closingAfterCleanup = true;
         _logWindow?.Close();
-        await ViewModel.DisposeAsync();
+
+        try
+        {
+            await ViewModel.DisposeAsync();
+        }
+        catch (Exception ex)
+        {
+            ViewModel.ReportException(ex);
+        }
+
+        Close();
     }
 }

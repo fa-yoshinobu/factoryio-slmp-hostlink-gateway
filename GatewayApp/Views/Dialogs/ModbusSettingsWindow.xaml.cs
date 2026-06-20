@@ -1,6 +1,8 @@
 using GatewayApp.Models;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace GatewayApp.Views.Dialogs;
 
@@ -15,9 +17,13 @@ public partial class ModbusSettingsWindow : Window
         MaxDiscreteInputTextBox.Text = FormatMaxAddress(Settings.MaxDiscreteInputAddress);
         MaxHoldingRegisterTextBox.Text = FormatMaxAddress(Settings.MaxHoldingRegisterAddress);
         MaxInputRegisterTextBox.Text = FormatMaxAddress(Settings.MaxInputRegisterAddress);
-        FormGrid.IsEnabled = !isRunning;
-        SaveButton.IsEnabled = !isRunning;
+        SaveButton.Visibility = isRunning ? Visibility.Collapsed : Visibility.Visible;
         WarningText.Visibility = isRunning ? Visibility.Visible : Visibility.Collapsed;
+        WarningText.Text = isRunning ? "稼働中は読み取り専用です" : WarningText.Text;
+        if (isRunning)
+        {
+            SetReadOnly(FormGrid);
+        }
     }
 
     public ModbusSettings Settings { get; }
@@ -85,5 +91,19 @@ public partial class ModbusSettingsWindow : Window
 
         value = parsed;
         return true;
+    }
+
+    private static void SetReadOnly(DependencyObject parent)
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is TextBox textBox)
+            {
+                textBox.IsReadOnly = true;
+            }
+
+            SetReadOnly(child);
+        }
     }
 }
