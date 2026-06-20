@@ -25,8 +25,8 @@
             <TextBlock Grid.Row="0" Grid.Column="0" Text="対象 Modbus 種別" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <ComboBox x:Name="TypeCombo" Grid.Row="0" Grid.Column="1" Margin="0,0,0,10" />
 
-            <TextBlock Grid.Row="1" Grid.Column="0" Text="PLC デバイス接頭辞" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
-            <TextBox x:Name="PrefixTextBox" Grid.Row="1" Grid.Column="1" Text="M" Margin="0,0,0,10" />
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="PLC デバイス" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
+            <ComboBox x:Name="DeviceCombo" Grid.Row="1" Grid.Column="1" Margin="0,0,0,10" />
 
             <TextBlock Grid.Row="2" Grid.Column="0" Text="開始番号" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <TextBox x:Name="StartTextBox" Grid.Row="2" Grid.Column="1" Text="0" Margin="0,0,0,10" />

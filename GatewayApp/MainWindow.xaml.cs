@@ -164,14 +164,14 @@ public partial class MainWindow : Window
 
     private void BulkAssign_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new BulkAssignWindow
+        var dialog = new BulkAssignWindow(ViewModel.Plc)
         {
             Owner = this,
         };
 
         if (dialog.ShowDialog() == true)
         {
-            ViewModel.ApplyBulkAssign(dialog.TargetModbusType, dialog.PlcPrefix, dialog.StartNumber, dialog.Increment);
+            ViewModel.ApplyBulkAssign(dialog.TargetModbusType, dialog.PlcPrefix, dialog.StartNumberText, dialog.Increment);
         }
     }
 
@@ -189,6 +189,14 @@ public partial class MainWindow : Window
         };
         _logWindow.Closed += (_, _) => _logWindow = null;
         _logWindow.Show();
+    }
+
+    private void About_Click(object sender, RoutedEventArgs e)
+    {
+        new AboutWindow
+        {
+            Owner = this,
+        }.ShowDialog();
     }
 
     private async void Led_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

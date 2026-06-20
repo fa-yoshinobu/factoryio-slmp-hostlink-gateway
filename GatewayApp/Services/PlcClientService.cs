@@ -38,9 +38,10 @@ public sealed class PlcClientService : IAsyncDisposable
         var hostLinkOptions = new KvHostLinkConnectionOptions(
             settings.Host,
             settings.Port,
-            TimeSpan.FromSeconds(Math.Max(1, settings.TimeoutSec)));
+            TimeSpan.FromSeconds(Math.Max(1, settings.TimeoutSec)),
+            PlcProfile: settings.HostLinkProfile);
         _hostLink = await KvHostLinkClientFactory.OpenAndConnectAsync(hostLinkOptions, cancellationToken).ConfigureAwait(false);
-        TraceReported?.Invoke($"PLC CONNECT HostLink host={settings.Host}:{settings.Port}");
+        TraceReported?.Invoke($"PLC CONNECT HostLink profile={_hostLink.PlcProfile} host={settings.Host}:{settings.Port}");
     }
 
     public async Task DisconnectAsync()

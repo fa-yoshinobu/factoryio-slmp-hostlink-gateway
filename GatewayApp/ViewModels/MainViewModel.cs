@@ -250,13 +250,25 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         RebuildMonitorRows();
     }
 
-    public void ApplyBulkAssign(ModbusType modbusType, string prefix, int startNumber, int increment)
+    public void ApplyBulkAssign(ModbusType modbusType, string prefix, string startNumberText, int increment)
     {
-        var index = 0;
-        foreach (var entry in Mappings.Where(x => x.ModbusType == modbusType).OrderBy(x => x.ModbusAddress))
+        var entries = Mappings.Where(x => x.ModbusType == modbusType).OrderBy(x => x.ModbusAddress).ToList();
+        var addresses = new List<string>(entries.Count);
+        for (var index = 0; index < entries.Count; index++)
         {
-            entry.PlcAddress = $"{prefix}{startNumber + index * increment}";
-            index++;
+            var offset = checked(index * increment);
+            if (!PlcAddressSequence.TryFormat(Plc.Protocol, Plc.SlmpProfile, prefix, startNumberText, offset, out var address, out var error))
+            {
+                ReportError(error);
+                return;
+            }
+
+            addresses.Add(address);
+        }
+
+        for (var index = 0; index < entries.Count; index++)
+        {
+            entries[index].PlcAddress = addresses[index];
         }
     }
 

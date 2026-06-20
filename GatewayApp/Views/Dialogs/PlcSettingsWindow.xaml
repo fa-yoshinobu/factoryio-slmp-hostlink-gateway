@@ -50,11 +50,12 @@
             <TextBlock Grid.Row="4" Grid.Column="0" Text="ポーリング (ms)" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
             <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding PollingMs, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" />
 
-            <TextBlock x:Name="ProfileLabel" Grid.Row="5" Grid.Column="0" Text="PLCプロファイル" VerticalAlignment="Center" Margin="0,0,8,0" TextAlignment="Right" />
+            <TextBlock x:Name="ProfileLabel" Grid.Row="5" Grid.Column="0" Text="機種" VerticalAlignment="Center" Margin="0,0,8,0" TextAlignment="Right" />
             <ComboBox x:Name="ProfileCombo"
                       Grid.Row="5"
                       Grid.Column="1"
-                      SelectedItem="{Binding SlmpProfile, UpdateSourceTrigger=PropertyChanged}" />
+                      DisplayMemberPath="Label"
+                      SelectedValuePath="Value" />
         </Grid>
     </DockPanel>
 </Window>

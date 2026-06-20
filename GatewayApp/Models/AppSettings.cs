@@ -29,6 +29,7 @@ public sealed class MappingEntrySettings
 public sealed class PlcSettings
 {
     public const string DefaultSlmpProfile = "melsec:iq-r";
+    public const string DefaultHostLinkProfile = "keyence:kv-8000";
 
     public string Protocol { get; set; } = "SLMP";
 
@@ -42,6 +43,8 @@ public sealed class PlcSettings
 
     public string SlmpProfile { get; set; } = DefaultSlmpProfile;
 
+    public string HostLinkProfile { get; set; } = DefaultHostLinkProfile;
+
     public PlcSettings Clone()
     {
         return new PlcSettings
@@ -52,6 +55,7 @@ public sealed class PlcSettings
             TimeoutSec = TimeoutSec,
             PollingMs = PollingMs,
             SlmpProfile = NormalizeSlmpProfile(SlmpProfile),
+            HostLinkProfile = NormalizeHostLinkProfile(HostLinkProfile),
         }.Normalize();
     }
 
@@ -63,6 +67,7 @@ public sealed class PlcSettings
         TimeoutSec = Math.Max(1, TimeoutSec);
         PollingMs = Math.Max(10, PollingMs);
         SlmpProfile = NormalizeSlmpProfile(SlmpProfile);
+        HostLinkProfile = NormalizeHostLinkProfile(HostLinkProfile);
         return this;
     }
 
@@ -73,8 +78,34 @@ public sealed class PlcSettings
             null or "" => DefaultSlmpProfile,
             "iQ-R" => "melsec:iq-r",
             "iQ-F" => "melsec:iq-f",
-            "Q Series" => "melsec:qcpu",
-            "L Series" => "melsec:lcpu",
+            "iQ-L" => "melsec:iq-l",
+            "MX-R" => "melsec:mx-r",
+            "MX-F" => "melsec:mx-f",
+            "QnUDV" => "melsec:qnudv",
+            "QnU" => "melsec:qnu",
+            "QCPU" or "Q Series" => "melsec:qcpu",
+            "LCPU" or "L Series" => "melsec:lcpu",
+            var text => text,
+        };
+    }
+
+    public static string NormalizeHostLinkProfile(string? value)
+    {
+        return value?.Trim() switch
+        {
+            null or "" => DefaultHostLinkProfile,
+            "KV-Nano" => "keyence:kv-nano",
+            "KV-Nano / XYM" => "keyence:kv-nano-xym",
+            "KV-3000" => "keyence:kv-3000",
+            "KV-3000 / XYM" => "keyence:kv-3000-xym",
+            "KV-5000" => "keyence:kv-5000",
+            "KV-5000 / XYM" => "keyence:kv-5000-xym",
+            "KV-7000" => "keyence:kv-7000",
+            "KV-7000 / XYM" => "keyence:kv-7000-xym",
+            "KV-8000" => "keyence:kv-8000",
+            "KV-8000 / XYM" => "keyence:kv-8000-xym",
+            "KV-X500" => "keyence:kv-x500",
+            "KV-X500 / XYM" => "keyence:kv-x500-xym",
             var text => text,
         };
     }
