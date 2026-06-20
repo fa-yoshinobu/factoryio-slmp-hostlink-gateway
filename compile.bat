@@ -10,21 +10,6 @@ echo [compile] Factory I/O Gateway single-file publish
 echo [compile] Project: "%PROJECT%"
 echo [compile] Output : "%EXE%"
 
-if not exist "%ROOT%..\NModbus\NModbus\NModbus.csproj" (
-  echo [error] Missing local library: "%ROOT%..\NModbus\NModbus\NModbus.csproj"
-  exit /b 1
-)
-
-if not exist "%ROOT%..\plc-comm-hostlink-dotnet\src\PlcComm.KvHostLink\PlcComm.KvHostLink.csproj" (
-  echo [error] Missing local library: "%ROOT%..\plc-comm-hostlink-dotnet\src\PlcComm.KvHostLink\PlcComm.KvHostLink.csproj"
-  exit /b 1
-)
-
-if not exist "%ROOT%..\plc-comm-slmp-dotnet\src\PlcComm.Slmp\PlcComm.Slmp.csproj" (
-  echo [error] Missing local library: "%ROOT%..\plc-comm-slmp-dotnet\src\PlcComm.Slmp\PlcComm.Slmp.csproj"
-  exit /b 1
-)
-
 if exist "%PUBLISH_DIR%" (
   tasklist /FI "IMAGENAME eq GatewayApp.exe" 2>nul | find /I "GatewayApp.exe" >nul
   if not errorlevel 1 (
