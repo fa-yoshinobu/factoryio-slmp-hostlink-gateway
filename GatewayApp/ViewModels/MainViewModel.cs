@@ -350,6 +350,12 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     {
         foreach (var entry in Mappings)
         {
+            if (value)
+            {
+                entry.ForceValue = entry.RawValue;
+                entry.IsForceEditing = false;
+            }
+
             entry.ForceEnabled = value;
         }
 

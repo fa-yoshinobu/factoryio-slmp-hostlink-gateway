@@ -93,10 +93,27 @@ internal static class Program
                 MaxHoldingRegisterAddress = 1,
                 MaxInputRegisterAddress = 1,
             });
-            viewModel.ToggleForce();
 
             var holding = viewModel.Mappings.Single(x =>
                 x.ModbusType == ModbusType.HoldingRegister && x.ModbusAddress == 0);
+            holding.RawValue = 321;
+
+            var input = viewModel.Mappings.Single(x =>
+                x.ModbusType == ModbusType.InputRegister && x.ModbusAddress == 0);
+            input.RawValue = 125;
+
+            viewModel.ToggleForce();
+
+            if (holding.ForceValue != 321)
+            {
+                failures.Add($"Force enable did not inherit holding register value. Expected 321, got {holding.ForceValue}.");
+            }
+
+            if (input.ForceValue != 125)
+            {
+                failures.Add($"Force enable did not inherit input register value. Expected 125, got {input.ForceValue}.");
+            }
+
             holding.DisplayType = DisplayType.Int16;
             viewModel.BeginRegisterEdit(holding);
             holding.ForceEditText = "1234";
@@ -107,8 +124,6 @@ internal static class Program
                 failures.Add($"Holding register force value mismatch. Expected 1234, got {holding.ForceValue}.");
             }
 
-            var input = viewModel.Mappings.Single(x =>
-                x.ModbusType == ModbusType.InputRegister && x.ModbusAddress == 0);
             input.DisplayType = DisplayType.ScaledReal;
             viewModel.BeginRegisterEdit(input);
             input.ForceEditText = "1.25";
