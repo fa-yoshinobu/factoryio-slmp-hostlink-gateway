@@ -1,0 +1,214 @@
+using CsvHelper;
+using CsvHelper.Configuration;
+using GatewayApp.Models;
+using System.Globalization;
+using System.IO;
+using System.Text.RegularExpressions;
+
+namespace GatewayApp.Services;
+
+public sealed class CsvImportService
+{
+    public IReadOnlyList<CsvImportPreviewItem> Preview(string path, IEnumerable<MappingEntry> existingMappings, int realScale)
+    {
+        var existing = existingMappings.ToDictionary(x => (x.ModbusType, x.ModbusAddress));
+        var items = new List<CsvImportPreviewItem>();
+
+        var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HeaderValidated = null,
+            MissingFieldFound = null,
+            TrimOptions = TrimOptions.Trim,
+        };
+
+        using var reader = File.OpenText(path);
+        using var csv = new CsvReader(reader, config, leaveOpen: false);
+        csv.Read();
+        csv.ReadHeader();
+
+        while (csv.Read())
+        {
+            var name = GetFieldAny(csv, "Name", "Tag", "Tag Name", "タグ名") ?? string.Empty;
+            var factoryType = GetFieldAny(csv, "Type", "I/O Type", "Tag Type", "種別") ?? string.Empty;
+            var dataType = GetFieldAny(csv, "Data Type", "DataType", "Datatype", "データ型") ?? string.Empty;
+            var address = GetFieldAny(csv, "Address", "Modbus Address", "アドレス") ?? string.Empty;
+
+            if (!TryParseAddress(address, out var modbusType, out var modbusAddress))
+            {
+                items.Add(new CsvImportPreviewItem
+                {
+                    Action = CsvImportAction.Skip,
+                    Name = name,
+                    Reason = $"未対応 Address: {address}",
+                });
+                continue;
+            }
+
+            if (!TryParseDisplayType(dataType, modbusType, out var displayType, out var displayTypeError))
+            {
+                items.Add(new CsvImportPreviewItem
+                {
+                    Action = CsvImportAction.Skip,
+                    Name = name,
+                    ModbusType = modbusType,
+                    ModbusAddress = modbusAddress,
+                    Reason = displayTypeError,
+                });
+                continue;
+            }
+
+            var proposed = new MappingEntry(modbusType, modbusAddress)
+            {
+                Comment = name,
+                DisplayType = displayType,
+                Direction = MappingEntry.GetDefaultDirection(modbusType),
+                RealScale = realScale,
+            };
+
+            if (existing.TryGetValue((modbusType, modbusAddress), out var current))
+            {
+                var changed = current.Comment != proposed.Comment || current.DisplayType != proposed.DisplayType;
+                items.Add(new CsvImportPreviewItem
+                {
+                    Action = changed ? CsvImportAction.Update : CsvImportAction.Skip,
+                    Name = name,
+                    ModbusType = modbusType,
+                    ModbusAddress = modbusAddress,
+                    DisplayType = displayType,
+                    ExistingPlcAddress = current.PlcAddress,
+                    Existing = current,
+                    Proposed = proposed,
+                    Reason = changed ? "コメント / 表示型を更新、PLCアドレスは保持" : "変更なし",
+                });
+            }
+            else
+            {
+                items.Add(new CsvImportPreviewItem
+                {
+                    Action = CsvImportAction.Add,
+                    Name = name,
+                    ModbusType = modbusType,
+                    ModbusAddress = modbusAddress,
+                    DisplayType = displayType,
+                    Proposed = proposed,
+                    Reason = "新規追加",
+                });
+            }
+        }
+
+        return items;
+    }
+
+    public CsvImportResult Apply(IEnumerable<CsvImportPreviewItem> previewItems, ICollection<MappingEntry> mappings)
+    {
+        var added = 0;
+        var updated = 0;
+        var skipped = 0;
+
+        foreach (var item in previewItems)
+        {
+            if (item.Action == CsvImportAction.Add && item.Proposed is not null)
+            {
+                mappings.Add(item.Proposed);
+                added++;
+                continue;
+            }
+
+            if (item.Action == CsvImportAction.Update && item.Existing is not null && item.Proposed is not null)
+            {
+                item.Existing.Comment = item.Proposed.Comment;
+                item.Existing.DisplayType = item.Proposed.DisplayType;
+                updated++;
+                continue;
+            }
+
+            skipped++;
+        }
+
+        return new CsvImportResult(added, updated, skipped);
+    }
+
+    private static bool TryParseAddress(string value, out ModbusType type, out int address)
+    {
+        type = ModbusType.Coil;
+        address = 0;
+        var text = Regex.Replace(value.Trim(), @"\s+", " ");
+        var match = Regex.Match(text, @"^(?<kind>.+?)\s+(?<address>\d+)$", RegexOptions.IgnoreCase);
+        if (!match.Success)
+        {
+            return false;
+        }
+
+        var kind = Regex.Replace(match.Groups["kind"].Value, @"[\s_-]+", string.Empty).ToUpperInvariant();
+        if (!int.TryParse(match.Groups["address"].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out address))
+        {
+            return false;
+        }
+
+        type = kind switch
+        {
+            "COIL" or "COILS" => ModbusType.Coil,
+            "INPUT" or "INPUTS" or "DISCRETEINPUT" or "DISCRETEINPUTS" => ModbusType.DiscreteInput,
+            "HOLDINGREG" or "HOLDINGREGS" or "HOLDINGREGISTER" or "HOLDINGREGISTERS" => ModbusType.HoldingRegister,
+            "INPUTREG" or "INPUTREGS" or "INPUTREGISTER" or "INPUTREGISTERS" => ModbusType.InputRegister,
+            _ => type,
+        };
+
+        return kind is "COIL" or "COILS"
+            or "INPUT" or "INPUTS" or "DISCRETEINPUT" or "DISCRETEINPUTS"
+            or "HOLDINGREG" or "HOLDINGREGS" or "HOLDINGREGISTER" or "HOLDINGREGISTERS"
+            or "INPUTREG" or "INPUTREGS" or "INPUTREGISTER" or "INPUTREGISTERS";
+    }
+
+    private static bool TryParseDisplayType(string value, ModbusType modbusType, out DisplayType displayType, out string error)
+    {
+        var text = value.Trim();
+        error = string.Empty;
+
+        if (!MappingEntry.IsRegisterType(modbusType))
+        {
+            displayType = DisplayType.Bool;
+            if (text.Equals("Bool", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            error = "Coil/Input は Bool のみ対応";
+            return false;
+        }
+
+        displayType = text.ToUpperInvariant() switch
+        {
+            "INT" or "INT16" or "INTEGER" => DisplayType.Int16,
+            "REAL" or "FLOAT" => DisplayType.ScaledReal,
+            _ => DisplayType.Int16,
+        };
+
+        if (text.Equals("Int", StringComparison.OrdinalIgnoreCase)
+            || text.Equals("Int16", StringComparison.OrdinalIgnoreCase)
+            || text.Equals("Integer", StringComparison.OrdinalIgnoreCase)
+            || text.Equals("Real", StringComparison.OrdinalIgnoreCase)
+            || text.Equals("Float", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        error = "Holding/Input Register は Int または Float のみ対応";
+        return false;
+    }
+
+    private static string? GetFieldAny(CsvReader csv, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            if (csv.TryGetField<string>(name, out var value))
+            {
+                return value;
+            }
+        }
+
+        return null;
+    }
+}
+
+public sealed record CsvImportResult(int Added, int Updated, int Skipped);

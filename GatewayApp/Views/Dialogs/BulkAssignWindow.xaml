@@ -1,0 +1,38 @@
+<Window x:Class="GatewayApp.Views.Dialogs.BulkAssignWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="PLCアドレス一括割当"
+        Width="390"
+        Height="270"
+        WindowStartupLocation="CenterOwner">
+    <DockPanel Background="#ebebeb">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="14">
+            <Button Content="キャンセル" Width="88" Margin="0,0,8,0" IsCancel="True" />
+            <Button Content="適用" Width="88" IsDefault="True" Click="Apply_Click" />
+        </StackPanel>
+        <Grid Margin="18,16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="130" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="対象 Modbus 種別" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
+            <ComboBox x:Name="TypeCombo" Grid.Row="0" Grid.Column="1" Margin="0,0,0,10" />
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="PLC デバイス接頭辞" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
+            <TextBox x:Name="PrefixTextBox" Grid.Row="1" Grid.Column="1" Text="M" Margin="0,0,0,10" />
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="開始番号" VerticalAlignment="Center" Margin="0,0,8,10" TextAlignment="Right" />
+            <TextBox x:Name="StartTextBox" Grid.Row="2" Grid.Column="1" Text="0" Margin="0,0,0,10" />
+
+            <TextBlock Grid.Row="3" Grid.Column="0" Text="増分" VerticalAlignment="Center" Margin="0,0,8,0" TextAlignment="Right" />
+            <TextBox x:Name="IncrementTextBox" Grid.Row="3" Grid.Column="1" Text="1" />
+        </Grid>
+    </DockPanel>
+</Window>
