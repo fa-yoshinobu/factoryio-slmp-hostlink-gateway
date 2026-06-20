@@ -13,10 +13,10 @@ namespace GatewayApp.ViewModels;
 
 public partial class MainViewModel : ObservableObject, IAsyncDisposable
 {
-    private const long MaxGatewayLogBytes = 1_000_000;
     private readonly SettingsService _settingsService = new();
     private readonly CsvImportService _csvImportService = new();
     private readonly GatewayService _gatewayService = new();
+    private readonly LogFileService _logFileService = new();
     private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
     private readonly DispatcherTimer _pollTimer;
     private bool _pollInFlight;
@@ -48,7 +48,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     private string _plcStatus = "PLC 未接続";
 
     [ObservableProperty]
-    private string _lastError = string.Empty;
+    private string _statusMessage = string.Empty;
 
     [ObservableProperty]
     private string _currentSettingsPath = string.Empty;
@@ -77,7 +77,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     public ObservableCollection<MonitorRegisterRow> RegisterRows { get; } = [];
 
-    public ObservableCollection<LogEntry> ErrorLogs { get; } = [];
+    public ObservableCollection<LogEntry> Logs { get; } = [];
 
     public Array ModbusTypeValues { get; } = Enum.GetValues<ModbusType>();
 
@@ -385,8 +385,8 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
             return;
         }
 
-        ErrorLogs.Clear();
-        LastError = string.Empty;
+        Logs.Clear();
+        StatusMessage = string.Empty;
         ClearGatewayLog();
     }
 
@@ -535,12 +535,12 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     private void SetStatus(string message)
     {
-        LastError = message;
+        StatusMessage = message;
     }
 
     private void ClearStatus()
     {
-        LastError = string.Empty;
+        StatusMessage = string.Empty;
     }
 
     private void ReportError(string message)
@@ -551,7 +551,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
             return;
         }
 
-        LastError = message;
+        StatusMessage = message;
         AddLog(message);
     }
 
@@ -569,11 +569,11 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         }
 
         var entry = new LogEntry(message);
-        ErrorLogs.Add(entry);
+        Logs.Add(entry);
         WriteGatewayLog(entry);
-        while (ErrorLogs.Count > 200)
+        while (Logs.Count > 200)
         {
-            ErrorLogs.RemoveAt(0);
+            Logs.RemoveAt(0);
         }
     }
 
@@ -581,10 +581,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     {
         try
         {
-            Directory.CreateDirectory(DefaultSettingsDirectory);
-            var path = Path.Combine(DefaultSettingsDirectory, "gateway.log");
-            RotateGatewayLogIfNeeded(path);
-            File.AppendAllText(path, $"{DateTime.Now:yyyy-MM-dd} {entry.FullText}{Environment.NewLine}");
+            _logFileService.WriteGatewayLog(entry);
         }
         catch (Exception ex)
         {
@@ -595,8 +592,8 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
 
             _gatewayLogFailureReported = true;
             var message = $"ログファイル書き込み失敗: {ex.Message}";
-            LastError = message;
-            ErrorLogs.Add(new LogEntry(message));
+            StatusMessage = message;
+            Logs.Add(new LogEntry(message));
         }
     }
 
@@ -604,31 +601,12 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     {
         try
         {
-            Directory.CreateDirectory(DefaultSettingsDirectory);
-            File.WriteAllText(Path.Combine(DefaultSettingsDirectory, "gateway.log"), string.Empty);
+            _logFileService.ClearGatewayLog();
             _gatewayLogFailureReported = false;
         }
         catch
         {
         }
-    }
-
-    private static void RotateGatewayLogIfNeeded(string path)
-    {
-        if (!File.Exists(path))
-        {
-            return;
-        }
-
-        var info = new FileInfo(path);
-        if (info.Length <= MaxGatewayLogBytes)
-        {
-            return;
-        }
-
-        using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-        using var writer = new StreamWriter(stream);
-        writer.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} gateway.log rotated because it exceeded {MaxGatewayLogBytes} bytes.");
     }
 
     private void ApplySettings(AppSettings? settings)
@@ -682,21 +660,24 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     private void OnMappingsChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        if (e.NewItems is not null)
+        if (e.Action != NotifyCollectionChangedAction.Move)
         {
-            foreach (MappingEntry entry in e.NewItems)
+            if (e.OldItems is not null)
             {
-                entry.RealScale = Modbus.RealScale;
-                entry.ForceEnabled = IsForceActiveFor(entry);
-                entry.PropertyChanged += OnMappingPropertyChanged;
+                foreach (MappingEntry entry in e.OldItems)
+                {
+                    entry.PropertyChanged -= OnMappingPropertyChanged;
+                }
             }
-        }
 
-        if (e.OldItems is not null)
-        {
-            foreach (MappingEntry entry in e.OldItems)
+            if (e.NewItems is not null)
             {
-                entry.PropertyChanged -= OnMappingPropertyChanged;
+                foreach (MappingEntry entry in e.NewItems)
+                {
+                    entry.RealScale = Modbus.RealScale;
+                    entry.ForceEnabled = IsForceActiveFor(entry);
+                    entry.PropertyChanged += OnMappingPropertyChanged;
+                }
             }
         }
 
@@ -726,10 +707,14 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
             return;
         }
 
-        Mappings.Clear();
-        foreach (var item in sorted)
+        for (var targetIndex = 0; targetIndex < sorted.Count; targetIndex++)
         {
-            Mappings.Add(item);
+            var item = sorted[targetIndex];
+            var currentIndex = Mappings.IndexOf(item);
+            if (currentIndex != targetIndex)
+            {
+                Mappings.Move(currentIndex, targetIndex);
+            }
         }
     }
 

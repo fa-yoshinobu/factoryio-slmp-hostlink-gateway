@@ -1,9 +1,6 @@
 using GatewayApp.Models;
-using PlcComm.KvHostLink;
 using System.Globalization;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace GatewayApp.Views.Dialogs;
 
@@ -20,21 +17,13 @@ public partial class PlcSettingsWindow : Window
     ];
 
     private static readonly PlcProfileOption[] SlmpProfiles =
-    [
-        new("melsec:iq-r", "iQ-R"),
-        new("melsec:iq-f", "iQ-F"),
-        new("melsec:iq-l", "iQ-L"),
-        new("melsec:mx-r", "MX-R"),
-        new("melsec:mx-f", "MX-F"),
-        new("melsec:qnudv", "QnUDV"),
-        new("melsec:qnu", "QnU"),
-        new("melsec:qcpu", "QCPU"),
-        new("melsec:lcpu", "LCPU"),
-    ];
+        PlcSettings.SlmpProfileOptions
+            .Select(option => new PlcProfileOption(option.Value, option.Label))
+            .ToArray();
 
     private static readonly PlcProfileOption[] HostLinkProfiles =
-        KvHostLinkDeviceRanges.AvailablePlcProfiles()
-            .Select(profile => new PlcProfileOption(profile, FormatHostLinkProfile(profile)))
+        PlcSettings.HostLinkProfileOptions
+            .Select(option => new PlcProfileOption(option.Value, option.Label))
             .ToArray();
 
     private string _currentProtocol;
@@ -56,7 +45,7 @@ public partial class PlcSettingsWindow : Window
         UpdateProfileSelector();
         if (isRunning)
         {
-            SetReadOnly(FormGrid);
+            DialogReadOnlyHelper.SetReadOnly(FormGrid, disableSelectors: true);
         }
     }
 
@@ -82,12 +71,12 @@ public partial class PlcSettingsWindow : Window
 
         if (SlmpRadio.IsChecked == true)
         {
-            ProfileCombo.ItemsSource = WithCurrentOption(SlmpProfiles, Settings.SlmpProfile, FormatSlmpProfile);
+            ProfileCombo.ItemsSource = WithCurrentOption(SlmpProfiles, Settings.SlmpProfile, PlcSettings.FormatSlmpProfile);
             ProfileCombo.SelectedValue = Settings.SlmpProfile;
             return;
         }
 
-        ProfileCombo.ItemsSource = WithCurrentOption(HostLinkProfiles, Settings.HostLinkProfile, FormatHostLinkProfile);
+        ProfileCombo.ItemsSource = WithCurrentOption(HostLinkProfiles, Settings.HostLinkProfile, PlcSettings.FormatHostLinkProfile);
         ProfileCombo.SelectedValue = Settings.HostLinkProfile;
     }
 
@@ -139,62 +128,4 @@ public partial class PlcSettingsWindow : Window
         return options.Append(new PlcProfileOption(currentValue, labelFormatter(currentValue))).ToArray();
     }
 
-    private static string FormatSlmpProfile(string profileName)
-    {
-        return profileName switch
-        {
-            "melsec:iq-r" => "iQ-R",
-            "melsec:iq-f" => "iQ-F",
-            "melsec:iq-l" => "iQ-L",
-            "melsec:mx-r" => "MX-R",
-            "melsec:mx-f" => "MX-F",
-            "melsec:qnudv" => "QnUDV",
-            "melsec:qnu" => "QnU",
-            "melsec:qcpu" => "QCPU",
-            "melsec:lcpu" => "LCPU",
-            _ => string.IsNullOrWhiteSpace(profileName) ? "MELSEC" : profileName,
-        };
-    }
-
-    private static string FormatHostLinkProfile(string profileName)
-    {
-        return profileName switch
-        {
-            "keyence:kv-nano" => "KV-Nano",
-            "keyence:kv-nano-xym" => "KV-Nano / XYM",
-            "keyence:kv-3000" => "KV-3000",
-            "keyence:kv-3000-xym" => "KV-3000 / XYM",
-            "keyence:kv-5000" => "KV-5000",
-            "keyence:kv-5000-xym" => "KV-5000 / XYM",
-            "keyence:kv-7000" => "KV-7000",
-            "keyence:kv-7000-xym" => "KV-7000 / XYM",
-            "keyence:kv-8000" => "KV-8000",
-            "keyence:kv-8000-xym" => "KV-8000 / XYM",
-            "keyence:kv-x500" => "KV-X500",
-            "keyence:kv-x500-xym" => "KV-X500 / XYM",
-            _ => string.IsNullOrWhiteSpace(profileName) ? "KEYENCE KV" : profileName,
-        };
-    }
-
-    private static void SetReadOnly(DependencyObject parent)
-    {
-        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
-        {
-            var child = VisualTreeHelper.GetChild(parent, i);
-            switch (child)
-            {
-                case TextBox textBox:
-                    textBox.IsReadOnly = true;
-                    break;
-                case ComboBox comboBox:
-                    comboBox.IsEnabled = false;
-                    break;
-                case RadioButton radioButton:
-                    radioButton.IsEnabled = false;
-                    break;
-            }
-
-            SetReadOnly(child);
-        }
-    }
 }

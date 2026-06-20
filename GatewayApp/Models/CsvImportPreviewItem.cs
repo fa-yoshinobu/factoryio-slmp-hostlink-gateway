@@ -24,7 +24,7 @@ public sealed class CsvImportPreviewItem
 
     public string ModbusLabel => ModbusType is null || ModbusAddress is null
         ? string.Empty
-        : new MappingEntry(ModbusType.Value, ModbusAddress.Value).ModbusLabel;
+        : MappingEntry.FormatModbusLabel(ModbusType.Value, ModbusAddress.Value);
 
     public string Name { get; init; } = string.Empty;
 
@@ -38,4 +38,3 @@ public sealed class CsvImportPreviewItem
 
     public MappingEntry? Proposed { get; init; }
 }
-

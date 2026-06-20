@@ -189,14 +189,7 @@ public sealed class PlcClientService : IAsyncDisposable
 
     private static SlmpPlcProfile ParseSlmpProfile(string text)
     {
-        return text.Trim() switch
-        {
-            "iQ-R" => SlmpPlcProfiles.Parse("melsec:iq-r"),
-            "iQ-F" => SlmpPlcProfiles.Parse("melsec:iq-f"),
-            "Q Series" => SlmpPlcProfiles.Parse("melsec:qcpu"),
-            "L Series" => SlmpPlcProfiles.Parse("melsec:lcpu"),
-            _ => SlmpPlcProfiles.Parse(text),
-        };
+        return SlmpPlcProfiles.Parse(text.Trim());
     }
 
     private static SlmpTransportMode ParseSlmpTransport(string text)

@@ -96,7 +96,7 @@ internal static class Program
             window.UpdateLayout();
             PumpDispatcher();
 
-            if (viewModel.ErrorLogs.Count == 0)
+            if (viewModel.Logs.Count == 0)
             {
                 failures.Add("Error log entry was not added.");
             }
@@ -115,13 +115,13 @@ internal static class Program
             viewModel.IsRunning = false;
             viewModel.ReportException(new SocketException((int)SocketError.OperationAborted));
 
-            if (viewModel.ErrorLogs.Count != 0)
+            if (viewModel.Logs.Count != 0)
             {
                 failures.Add("Expected local stop SocketException was added to the error log.");
             }
 
             viewModel.ReportException(new InvalidOperationException("real error"));
-            if (viewModel.ErrorLogs.Count != 1)
+            if (viewModel.Logs.Count != 1)
             {
                 failures.Add("Real exception was not added to the error log after stop exception suppression.");
             }
@@ -248,7 +248,7 @@ internal static class Program
             input.ForceEditText = "not-a-number";
             viewModel.CommitRegisterForceAsync(input, clear: false).GetAwaiter().GetResult();
 
-            if (string.IsNullOrWhiteSpace(viewModel.LastError))
+            if (string.IsNullOrWhiteSpace(viewModel.StatusMessage))
             {
                 failures.Add("Invalid register input did not report an error.");
             }
@@ -325,7 +325,7 @@ internal static class Program
             viewModel.ReportLog("log window smoke");
             PumpDispatcher();
 
-            if (viewModel.ErrorLogs.Count == 0)
+            if (viewModel.Logs.Count == 0)
             {
                 failures.Add("Log window smoke did not add a log entry.");
             }
@@ -333,9 +333,9 @@ internal static class Program
             viewModel.ClearLogs();
             PumpDispatcher();
 
-            if (viewModel.ErrorLogs.Count != 0)
+            if (viewModel.Logs.Count != 0)
             {
-                failures.Add($"Clear logs failed. Count={viewModel.ErrorLogs.Count}.");
+                failures.Add($"Clear logs failed. Count={viewModel.Logs.Count}.");
             }
         }
         catch (Exception ex)

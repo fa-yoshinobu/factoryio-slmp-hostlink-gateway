@@ -13,8 +13,8 @@ public partial class LogWindow : Window
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = viewModel;
-        _viewModel.ErrorLogs.CollectionChanged += ErrorLogs_CollectionChanged;
-        Closed += (_, _) => _viewModel.ErrorLogs.CollectionChanged -= ErrorLogs_CollectionChanged;
+        _viewModel.Logs.CollectionChanged += Logs_CollectionChanged;
+        Closed += (_, _) => _viewModel.Logs.CollectionChanged -= Logs_CollectionChanged;
     }
 
     private async void CopyLog_Click(object sender, RoutedEventArgs e)
@@ -27,7 +27,7 @@ public partial class LogWindow : Window
 
     private async void CopyAllLogs_Click(object sender, RoutedEventArgs e)
     {
-        var text = string.Join(Environment.NewLine, _viewModel.ErrorLogs.Select(x => x.FullText));
+        var text = string.Join(Environment.NewLine, _viewModel.Logs.Select(x => x.FullText));
         if (!string.IsNullOrWhiteSpace(text))
         {
             await CopyToClipboardAsync(text);
@@ -53,13 +53,9 @@ public partial class LogWindow : Window
                 Clipboard.SetText(text);
                 return;
             }
-            catch (Exception ex) when (attempt < 4)
+            catch (Exception) when (attempt < 4)
             {
                 await Task.Delay(80);
-                if (attempt == 3)
-                {
-                    _viewModel.ReportException(ex);
-                }
             }
             catch (Exception ex)
             {
@@ -69,9 +65,9 @@ public partial class LogWindow : Window
         }
     }
 
-    private void ErrorLogs_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    private void Logs_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        if (_viewModel.ErrorLogs.Count == 0)
+        if (_viewModel.Logs.Count == 0)
         {
             return;
         }
@@ -80,7 +76,7 @@ public partial class LogWindow : Window
         {
             try
             {
-                LogList.ScrollIntoView(_viewModel.ErrorLogs[^1]);
+                LogList.ScrollIntoView(_viewModel.Logs[^1]);
             }
             catch
             {

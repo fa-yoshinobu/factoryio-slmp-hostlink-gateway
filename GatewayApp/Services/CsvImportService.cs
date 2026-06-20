@@ -183,24 +183,22 @@ public sealed class CsvImportService
             return false;
         }
 
-        displayType = text.ToUpperInvariant() switch
+        switch (text.ToUpperInvariant())
         {
-            "INT" or "INT16" or "INTEGER" => DisplayType.Int16,
-            "REAL" or "FLOAT" => DisplayType.ScaledReal,
-            _ => DisplayType.Int16,
-        };
-
-        if (text.Equals("Int", StringComparison.OrdinalIgnoreCase)
-            || text.Equals("Int16", StringComparison.OrdinalIgnoreCase)
-            || text.Equals("Integer", StringComparison.OrdinalIgnoreCase)
-            || text.Equals("Real", StringComparison.OrdinalIgnoreCase)
-            || text.Equals("Float", StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
+            case "INT":
+            case "INT16":
+            case "INTEGER":
+                displayType = DisplayType.Int16;
+                return true;
+            case "REAL":
+            case "FLOAT":
+                displayType = DisplayType.ScaledReal;
+                return true;
+            default:
+                displayType = DisplayType.Int16;
+                error = "Holding/Input Register は Int または Float のみ対応";
+                return false;
         }
-
-        error = "Holding/Input Register は Int または Float のみ対応";
-        return false;
     }
 
     private static string? GetFieldAny(CsvReader csv, params string[] names)

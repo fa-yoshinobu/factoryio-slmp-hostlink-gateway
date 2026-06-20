@@ -31,6 +31,48 @@ public sealed class PlcSettings
     public const string DefaultTransport = "TCP";
     public const int DefaultSlmpPort = 1025;
     public const int DefaultHostLinkPort = 8501;
+    private static readonly (string Value, string Label)[] SlmpProfileOptionsInternal =
+    [
+        ("melsec:iq-r", "iQ-R"),
+        ("melsec:iq-f", "iQ-F"),
+        ("melsec:iq-l", "iQ-L"),
+        ("melsec:mx-r", "MX-R"),
+        ("melsec:mx-f", "MX-F"),
+        ("melsec:qnudv", "QnUDV"),
+        ("melsec:qnu", "QnU"),
+        ("melsec:qcpu", "QCPU"),
+        ("melsec:lcpu", "LCPU"),
+    ];
+    private static readonly (string Value, string Label)[] HostLinkProfileOptionsInternal =
+    [
+        ("keyence:kv-nano", "KV-Nano"),
+        ("keyence:kv-nano-xym", "KV-Nano / XYM"),
+        ("keyence:kv-3000", "KV-3000"),
+        ("keyence:kv-3000-xym", "KV-3000 / XYM"),
+        ("keyence:kv-5000", "KV-5000"),
+        ("keyence:kv-5000-xym", "KV-5000 / XYM"),
+        ("keyence:kv-7000", "KV-7000"),
+        ("keyence:kv-7000-xym", "KV-7000 / XYM"),
+        ("keyence:kv-8000", "KV-8000"),
+        ("keyence:kv-8000-xym", "KV-8000 / XYM"),
+        ("keyence:kv-x500", "KV-X500"),
+        ("keyence:kv-x500-xym", "KV-X500 / XYM"),
+    ];
+    private static readonly IReadOnlyDictionary<string, string> SlmpProfileAliases =
+        SlmpProfileOptionsInternal
+            .Select(option => (Alias: option.Label, option.Value))
+            .Concat(new (string Alias, string Value)[]
+            {
+                ("Q Series", "melsec:qcpu"),
+                ("L Series", "melsec:lcpu"),
+            })
+            .ToDictionary(option => option.Alias, option => option.Value, StringComparer.Ordinal);
+    private static readonly IReadOnlyDictionary<string, string> HostLinkProfileAliases =
+        HostLinkProfileOptionsInternal.ToDictionary(option => option.Label, option => option.Value, StringComparer.Ordinal);
+
+    public static IReadOnlyList<(string Value, string Label)> SlmpProfileOptions => SlmpProfileOptionsInternal;
+
+    public static IReadOnlyList<(string Value, string Label)> HostLinkProfileOptions => HostLinkProfileOptionsInternal;
 
     public string Protocol { get; set; } = "SLMP";
 
@@ -78,20 +120,13 @@ public sealed class PlcSettings
 
     public static string NormalizeSlmpProfile(string? value)
     {
-        return value?.Trim() switch
+        var text = value?.Trim();
+        if (string.IsNullOrWhiteSpace(text))
         {
-            null or "" => DefaultSlmpProfile,
-            "iQ-R" => "melsec:iq-r",
-            "iQ-F" => "melsec:iq-f",
-            "iQ-L" => "melsec:iq-l",
-            "MX-R" => "melsec:mx-r",
-            "MX-F" => "melsec:mx-f",
-            "QnUDV" => "melsec:qnudv",
-            "QnU" => "melsec:qnu",
-            "QCPU" or "Q Series" => "melsec:qcpu",
-            "LCPU" or "L Series" => "melsec:lcpu",
-            var text => text,
-        };
+            return DefaultSlmpProfile;
+        }
+
+        return SlmpProfileAliases.TryGetValue(text, out var canonical) ? canonical : text;
     }
 
     public static int DefaultPortForProtocol(string protocol)
@@ -114,23 +149,42 @@ public sealed class PlcSettings
 
     public static string NormalizeHostLinkProfile(string? value)
     {
-        return value?.Trim() switch
+        var text = value?.Trim();
+        if (string.IsNullOrWhiteSpace(text))
         {
-            null or "" => DefaultHostLinkProfile,
-            "KV-Nano" => "keyence:kv-nano",
-            "KV-Nano / XYM" => "keyence:kv-nano-xym",
-            "KV-3000" => "keyence:kv-3000",
-            "KV-3000 / XYM" => "keyence:kv-3000-xym",
-            "KV-5000" => "keyence:kv-5000",
-            "KV-5000 / XYM" => "keyence:kv-5000-xym",
-            "KV-7000" => "keyence:kv-7000",
-            "KV-7000 / XYM" => "keyence:kv-7000-xym",
-            "KV-8000" => "keyence:kv-8000",
-            "KV-8000 / XYM" => "keyence:kv-8000-xym",
-            "KV-X500" => "keyence:kv-x500",
-            "KV-X500 / XYM" => "keyence:kv-x500-xym",
-            var text => text,
-        };
+            return DefaultHostLinkProfile;
+        }
+
+        return HostLinkProfileAliases.TryGetValue(text, out var canonical) ? canonical : text;
+    }
+
+    public static string FormatSlmpProfile(string? value)
+    {
+        return FormatProfile(value, SlmpProfileOptionsInternal, "MELSEC");
+    }
+
+    public static string FormatHostLinkProfile(string? value)
+    {
+        return FormatProfile(value, HostLinkProfileOptionsInternal, "KEYENCE KV");
+    }
+
+    private static string FormatProfile(string? value, IReadOnlyList<(string Value, string Label)> options, string emptyLabel)
+    {
+        var text = value?.Trim();
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return emptyLabel;
+        }
+
+        foreach (var option in options)
+        {
+            if (string.Equals(option.Value, text, StringComparison.Ordinal))
+            {
+                return option.Label;
+            }
+        }
+
+        return text;
     }
 }
 
