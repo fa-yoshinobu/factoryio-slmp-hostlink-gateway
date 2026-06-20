@@ -1,8 +1,6 @@
 using GatewayApp.Models;
 using System.Globalization;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace GatewayApp.Views.Dialogs;
 
@@ -22,7 +20,7 @@ public partial class ModbusSettingsWindow : Window
         WarningText.Text = isRunning ? "稼働中は読み取り専用です" : WarningText.Text;
         if (isRunning)
         {
-            SetReadOnly(FormGrid);
+            DialogReadOnlyHelper.SetReadOnly(FormGrid, disableSelectors: false);
         }
     }
 
@@ -93,17 +91,4 @@ public partial class ModbusSettingsWindow : Window
         return true;
     }
 
-    private static void SetReadOnly(DependencyObject parent)
-    {
-        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
-        {
-            var child = VisualTreeHelper.GetChild(parent, i);
-            if (child is TextBox textBox)
-            {
-                textBox.IsReadOnly = true;
-            }
-
-            SetReadOnly(child);
-        }
-    }
 }

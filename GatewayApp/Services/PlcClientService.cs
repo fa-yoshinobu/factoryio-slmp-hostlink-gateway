@@ -1,6 +1,7 @@
 using GatewayApp.Models;
 using PlcComm.KvHostLink;
 using PlcComm.Slmp;
+using System.Net.Sockets;
 
 namespace GatewayApp.Services;
 
@@ -20,28 +21,43 @@ public sealed class PlcClientService : IAsyncDisposable
     public async Task ConnectAsync(PlcSettings settings, CancellationToken cancellationToken = default)
     {
         await DisconnectAsync().ConfigureAwait(false);
+        var normalized = settings.Clone();
 
-        if (settings.Protocol.Equals("SLMP", StringComparison.OrdinalIgnoreCase))
+        try
         {
-            var profile = ParseSlmpProfile(settings.SlmpProfile);
-            var options = new SlmpConnectionOptions(settings.Host, profile)
+            if (normalized.Protocol.Equals("SLMP", StringComparison.OrdinalIgnoreCase))
             {
-                Port = settings.Port,
-                Timeout = TimeSpan.FromSeconds(Math.Max(1, settings.TimeoutSec)),
-            };
-            _slmp = await SlmpClientFactory.OpenAndConnectAsync(options, cancellationToken).ConfigureAwait(false);
-            TraceReported?.Invoke(
-                $"PLC CONNECT SLMP profile={_slmp.PlcProfile} frame={_slmp.FrameType} mode={_slmp.CompatibilityMode} target={_slmp.TargetAddress}");
-            return;
-        }
+                var profile = ParseSlmpProfile(normalized.SlmpProfile);
+                var options = new SlmpConnectionOptions(normalized.Host, profile)
+                {
+                    Port = normalized.Port,
+                    Timeout = TimeSpan.FromSeconds(Math.Max(1, normalized.TimeoutSec)),
+                    Transport = ParseSlmpTransport(normalized.Transport),
+                };
+                _slmp = await SlmpClientFactory.OpenAndConnectAsync(options, cancellationToken).ConfigureAwait(false);
+                TraceReported?.Invoke(
+                    $"PLC CONNECT SLMP transport={options.Transport} profile={_slmp.PlcProfile} frame={_slmp.FrameType} mode={_slmp.CompatibilityMode} target={_slmp.TargetAddress}");
+                return;
+            }
 
-        var hostLinkOptions = new KvHostLinkConnectionOptions(
-            settings.Host,
-            settings.HostLinkProfile,
-            Port: settings.Port,
-            Timeout: TimeSpan.FromSeconds(Math.Max(1, settings.TimeoutSec)));
-        _hostLink = await KvHostLinkClientFactory.OpenAndConnectAsync(hostLinkOptions, cancellationToken).ConfigureAwait(false);
-        TraceReported?.Invoke($"PLC CONNECT HostLink profile={_hostLink.PlcProfile} host={settings.Host}:{settings.Port}");
+            var hostLinkOptions = new KvHostLinkConnectionOptions(
+                normalized.Host,
+                normalized.HostLinkProfile,
+                Port: normalized.Port,
+                Timeout: TimeSpan.FromSeconds(Math.Max(1, normalized.TimeoutSec)),
+                Transport: ParseHostLinkTransport(normalized.Transport));
+            _hostLink = await KvHostLinkClientFactory.OpenAndConnectAsync(hostLinkOptions, cancellationToken).ConfigureAwait(false);
+            TraceReported?.Invoke(
+                $"PLC CONNECT HostLink transport={hostLinkOptions.Transport} profile={_hostLink.PlcProfile} host={normalized.Host}:{normalized.Port}");
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(BuildConnectionFailureMessage(normalized, ex), ex);
+        }
     }
 
     public async Task DisconnectAsync()
@@ -173,13 +189,63 @@ public sealed class PlcClientService : IAsyncDisposable
 
     private static SlmpPlcProfile ParseSlmpProfile(string text)
     {
-        return text.Trim() switch
+        return SlmpPlcProfiles.Parse(text.Trim());
+    }
+
+    private static SlmpTransportMode ParseSlmpTransport(string text)
+    {
+        return text.Trim().ToUpperInvariant() switch
         {
-            "iQ-R" => SlmpPlcProfiles.Parse("melsec:iq-r"),
-            "iQ-F" => SlmpPlcProfiles.Parse("melsec:iq-f"),
-            "Q Series" => SlmpPlcProfiles.Parse("melsec:qcpu"),
-            "L Series" => SlmpPlcProfiles.Parse("melsec:lcpu"),
-            _ => SlmpPlcProfiles.Parse(text),
+            "TCP" => SlmpTransportMode.Tcp,
+            "UDP" => SlmpTransportMode.Udp,
+            _ => throw new InvalidOperationException($"PLC通信方式が不正です: {text}"),
         };
+    }
+
+    private static HostLinkTransportMode ParseHostLinkTransport(string text)
+    {
+        return text.Trim().ToUpperInvariant() switch
+        {
+            "TCP" => HostLinkTransportMode.Tcp,
+            "UDP" => HostLinkTransportMode.Udp,
+            _ => throw new InvalidOperationException($"PLC通信方式が不正です: {text}"),
+        };
+    }
+
+    private static string BuildConnectionFailureMessage(PlcSettings settings, Exception exception)
+    {
+        var profile = settings.Protocol.Equals("SLMP", StringComparison.OrdinalIgnoreCase)
+            ? settings.SlmpProfile
+            : settings.HostLinkProfile;
+        return $"PLC接続に失敗しました ({settings.Protocol} {settings.Transport} {settings.Host}:{settings.Port}, 機種={profile}, タイムアウト={settings.TimeoutSec}秒)。{DescribeConnectionFailure(exception)}";
+    }
+
+    private static string DescribeConnectionFailure(Exception exception)
+    {
+        if (exception is OperationCanceledException)
+        {
+            return "応答待ちがキャンセルまたはタイムアウトしました。";
+        }
+
+        var socketException = FindSocketException(exception);
+        if (socketException is not null)
+        {
+            return $"SocketError={socketException.SocketErrorCode}, NativeError={socketException.NativeErrorCode}: {socketException.Message}";
+        }
+
+        return exception.Message;
+    }
+
+    private static SocketException? FindSocketException(Exception exception)
+    {
+        for (var current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is SocketException socketException)
+            {
+                return socketException;
+            }
+        }
+
+        return null;
     }
 }

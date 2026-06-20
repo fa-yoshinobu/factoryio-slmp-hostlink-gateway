@@ -38,7 +38,7 @@
         </Grid>
 
         <ListBox x:Name="LogList"
-                 ItemsSource="{Binding ErrorLogs}"
+                 ItemsSource="{Binding Logs}"
                  Background="#202020"
                  BorderThickness="0"
                  HorizontalContentAlignment="Stretch"

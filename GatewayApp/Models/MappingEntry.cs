@@ -97,14 +97,19 @@ public partial class MappingEntry : ObservableObject
 
     public int EffectiveRawValue => IsForceApplied ? ForceValue!.Value : RawValue;
 
-    public string ModbusLabel => ModbusType switch
+    public string ModbusLabel => FormatModbusLabel(ModbusType, ModbusAddress);
+
+    public static string FormatModbusLabel(ModbusType type, int address)
     {
-        ModbusType.Coil => $"Coil {ModbusAddress}",
-        ModbusType.DiscreteInput => $"Input {ModbusAddress}",
-        ModbusType.HoldingRegister => $"HR {ModbusAddress}",
-        ModbusType.InputRegister => $"IR {ModbusAddress}",
-        _ => ModbusAddress.ToString(CultureInfo.InvariantCulture),
-    };
+        return type switch
+        {
+            ModbusType.Coil => $"Coil {address}",
+            ModbusType.DiscreteInput => $"Input {address}",
+            ModbusType.HoldingRegister => $"HR {address}",
+            ModbusType.InputRegister => $"IR {address}",
+            _ => address.ToString(CultureInfo.InvariantCulture),
+        };
+    }
 
     public string DisplayValue
     {

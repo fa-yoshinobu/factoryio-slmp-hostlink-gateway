@@ -43,9 +43,11 @@ internal static class Program
             else
             {
                 SmokeErrorLogBinding(window, viewModel, failures);
+                SmokeExpectedStopExceptionSuppression(viewModel, failures);
                 SmokeRegisterForceInput(viewModel, failures);
                 SmokeScaledRawFormatting(failures);
                 SmokePlcProfileOptions(failures);
+                SmokePlcConnectionFailureMessage(failures);
                 SmokeBulkAssignDeviceOptions(failures);
                 SmokePlcAddressSequence(failures);
                 SmokeValueBrushConverter(failures);
@@ -94,7 +96,7 @@ internal static class Program
             window.UpdateLayout();
             PumpDispatcher();
 
-            if (viewModel.ErrorLogs.Count == 0)
+            if (viewModel.Logs.Count == 0)
             {
                 failures.Add("Error log entry was not added.");
             }
@@ -102,6 +104,33 @@ internal static class Program
         catch (Exception ex)
         {
             failures.Add($"Error log binding smoke failed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private static void SmokeExpectedStopExceptionSuppression(MainViewModel viewModel, List<string> failures)
+    {
+        try
+        {
+            viewModel.ClearLogs();
+            viewModel.IsRunning = false;
+            viewModel.ReportException(new SocketException((int)SocketError.OperationAborted));
+
+            if (viewModel.Logs.Count != 0)
+            {
+                failures.Add("Expected local stop SocketException was added to the error log.");
+            }
+
+            viewModel.ReportException(new InvalidOperationException("real error"));
+            if (viewModel.Logs.Count != 1)
+            {
+                failures.Add("Real exception was not added to the error log after stop exception suppression.");
+            }
+
+            viewModel.ClearLogs();
+        }
+        catch (Exception ex)
+        {
+            failures.Add($"Expected stop exception suppression smoke failed: {ex.GetType().Name}: {ex.Message}");
         }
     }
 
@@ -219,7 +248,7 @@ internal static class Program
             input.ForceEditText = "not-a-number";
             viewModel.CommitRegisterForceAsync(input, clear: false).GetAwaiter().GetResult();
 
-            if (string.IsNullOrWhiteSpace(viewModel.LastError))
+            if (string.IsNullOrWhiteSpace(viewModel.StatusMessage))
             {
                 failures.Add("Invalid register input did not report an error.");
             }
@@ -296,7 +325,7 @@ internal static class Program
             viewModel.ReportLog("log window smoke");
             PumpDispatcher();
 
-            if (viewModel.ErrorLogs.Count == 0)
+            if (viewModel.Logs.Count == 0)
             {
                 failures.Add("Log window smoke did not add a log entry.");
             }
@@ -304,9 +333,9 @@ internal static class Program
             viewModel.ClearLogs();
             PumpDispatcher();
 
-            if (viewModel.ErrorLogs.Count != 0)
+            if (viewModel.Logs.Count != 0)
             {
-                failures.Add($"Clear logs failed. Count={viewModel.ErrorLogs.Count}.");
+                failures.Add($"Clear logs failed. Count={viewModel.Logs.Count}.");
             }
         }
         catch (Exception ex)
@@ -396,12 +425,15 @@ internal static class Program
             var settings = new PlcSettings
             {
                 Protocol = "HostLink",
+                Port = PlcSettings.DefaultHostLinkPort,
+                Transport = "udp",
                 SlmpProfile = "iQ-L",
                 HostLinkProfile = "keyence:kv-8000-xym",
             }.Normalize();
 
             AssertEqual("melsec:iq-l", settings.SlmpProfile, failures, "SLMP profile label normalization");
             AssertEqual("keyence:kv-8000-xym", settings.HostLinkProfile, failures, "HostLink profile canonical value");
+            AssertEqual("UDP", settings.Transport, failures, "PLC transport normalization");
 
             settingsWindow = new PlcSettingsWindow(settings, isRunning: false);
             settingsWindow.Show();
@@ -420,6 +452,12 @@ internal static class Program
                 failures.Add(
                     $"HostLink profile combo did not use human label with canonical value. Value={selectedOption?.Value}, Label={selectedOption?.Label}.");
             }
+
+            if (settingsWindow.FindName("TransportCombo") is not ComboBox transportCombo
+                || transportCombo.SelectedValue as string != "UDP")
+            {
+                failures.Add("PLC settings transport combo did not select UDP.");
+            }
         }
         catch (Exception ex)
         {
@@ -428,6 +466,78 @@ internal static class Program
         finally
         {
             settingsWindow?.Close();
+        }
+    }
+
+    private static void SmokePlcConnectionFailureMessage(List<string> failures)
+    {
+        PlcClientService? client = null;
+        PlcSettingsWindow? settingsWindow = null;
+        try
+        {
+            client = new PlcClientService();
+            var settings = new PlcSettings
+            {
+                Protocol = "HostLink",
+                Host = "127.0.0.1",
+                Port = PlcSettings.DefaultHostLinkPort,
+                Transport = "BAD",
+                HostLinkProfile = "keyence:kv-8000",
+            };
+
+            try
+            {
+                client.ConnectAsync(settings).GetAwaiter().GetResult();
+                failures.Add("Invalid PLC transport did not fail.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                if (!ex.Message.Contains("PLC接続に失敗しました (HostLink BAD 127.0.0.1:8501", StringComparison.Ordinal)
+                    || !ex.Message.Contains("PLC通信方式が不正です: BAD", StringComparison.Ordinal))
+                {
+                    failures.Add($"PLC connection failure message lacked connection context: {ex.Message}");
+                }
+            }
+
+            var portSettings = new PlcSettings();
+            settingsWindow = new PlcSettingsWindow(portSettings, isRunning: false);
+            settingsWindow.Show();
+            settingsWindow.UpdateLayout();
+            PumpDispatcher();
+
+            if (settingsWindow.FindName("HostLinkRadio") is RadioButton hostLinkRadio)
+            {
+                hostLinkRadio.IsChecked = true;
+                PumpDispatcher();
+            }
+
+            if (portSettings.Port != PlcSettings.DefaultHostLinkPort)
+            {
+                failures.Add($"HostLink protocol switch did not apply default port. Expected {PlcSettings.DefaultHostLinkPort}, got {portSettings.Port}.");
+            }
+
+            if (settingsWindow.FindName("SlmpRadio") is RadioButton slmpRadio)
+            {
+                slmpRadio.IsChecked = true;
+                PumpDispatcher();
+            }
+
+            if (portSettings.Port != PlcSettings.DefaultSlmpPort)
+            {
+                failures.Add($"SLMP protocol switch did not apply default port. Expected {PlcSettings.DefaultSlmpPort}, got {portSettings.Port}.");
+            }
+        }
+        catch (Exception ex)
+        {
+            failures.Add($"PLC connection failure message smoke failed: {ex.GetType().Name}: {ex.Message}");
+        }
+        finally
+        {
+            settingsWindow?.Close();
+            if (client is not null)
+            {
+                client.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            }
         }
     }
 
