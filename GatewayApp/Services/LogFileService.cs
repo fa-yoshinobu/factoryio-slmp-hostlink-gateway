@@ -5,7 +5,6 @@ namespace GatewayApp.Services;
 
 public sealed class LogFileService
 {
-    private const long MaxLogBytes = 1_000_000;
     private readonly string _directory;
 
     public LogFileService()
@@ -25,8 +24,13 @@ public sealed class LogFileService
 
     public void ClearGatewayLog()
     {
-        Directory.CreateDirectory(_directory);
-        File.WriteAllText(Path.Combine(_directory, "gateway.log"), string.Empty);
+        ClearLog("gateway.log");
+    }
+
+    public void ClearAllLogs()
+    {
+        ClearLog("gateway.log");
+        ClearLog("error.log");
     }
 
     public void WriteExceptionLog(Exception exception)
@@ -38,25 +42,12 @@ public sealed class LogFileService
     {
         Directory.CreateDirectory(_directory);
         var path = Path.Combine(_directory, fileName);
-        RotateLogIfNeeded(path, fileName);
         File.AppendAllText(path, text);
     }
 
-    private static void RotateLogIfNeeded(string path, string fileName)
+    private void ClearLog(string fileName)
     {
-        if (!File.Exists(path))
-        {
-            return;
-        }
-
-        var info = new FileInfo(path);
-        if (info.Length <= MaxLogBytes)
-        {
-            return;
-        }
-
-        using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-        using var writer = new StreamWriter(stream);
-        writer.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} {fileName} rotated because it exceeded {MaxLogBytes} bytes.");
+        Directory.CreateDirectory(_directory);
+        File.WriteAllText(Path.Combine(_directory, fileName), string.Empty);
     }
 }

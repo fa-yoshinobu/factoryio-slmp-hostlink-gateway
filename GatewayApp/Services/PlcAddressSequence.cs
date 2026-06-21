@@ -37,9 +37,11 @@ public static class PlcAddressSequence
         }
 
         var rule = ResolveRule(plcProtocol, slmpProfile, prefix.Trim());
-        if (!TryParseStartNumber(startNumberText, rule, out var startNumber))
+        if (!TryParseStartNumber(startNumberText, rule, out var startNumber, out var startNumberOutOfRange))
         {
-            error = Loc.Format("StartNumberInvalid", rule.Prefix);
+            error = startNumberOutOfRange
+                ? Loc.Text("PlcAddressOutOfRange")
+                : Loc.Format("StartNumberInvalid", rule.Prefix);
             return false;
         }
 
@@ -89,9 +91,10 @@ public static class PlcAddressSequence
         };
     }
 
-    private static bool TryParseStartNumber(string text, PlcAddressSequenceRule rule, out uint number)
+    private static bool TryParseStartNumber(string text, PlcAddressSequenceRule rule, out uint number, out bool outOfRange)
     {
         number = 0;
+        outOfRange = false;
         var token = text.Trim().ToUpperInvariant();
         if (token.Length == 0)
         {
@@ -100,7 +103,7 @@ public static class PlcAddressSequence
 
         return rule.DisplayRule switch
         {
-            PlcAddressDisplayRule.KeyenceXymBit => TryParseKeyenceXymBitNumber(token, out number),
+            PlcAddressDisplayRule.KeyenceXymBit => TryParseKeyenceXymBitNumber(token, out number, out outOfRange),
             PlcAddressDisplayRule.OctalNoPadding => TryParseOctalNumber(token, out number),
             _ => TryParseNumber(token, rule.UsesHexAddressing, out number),
         };
@@ -136,9 +139,10 @@ public static class PlcAddressSequence
         return token.Length > 0;
     }
 
-    private static bool TryParseKeyenceXymBitNumber(string token, out uint number)
+    private static bool TryParseKeyenceXymBitNumber(string token, out uint number, out bool outOfRange)
     {
         number = 0;
+        outOfRange = false;
         var bankText = token.Length == 1 ? "0" : token[..^1];
         var bitText = token[^1..];
         if (!bankText.All(character => character is >= '0' and <= '9'))
@@ -153,7 +157,13 @@ public static class PlcAddressSequence
             return false;
         }
 
-        number = checked((bank * 16) + bit);
+        if (bank > (uint.MaxValue - bit) / 16)
+        {
+            outOfRange = true;
+            return false;
+        }
+
+        number = (bank * 16) + bit;
         return true;
     }
 

@@ -11,7 +11,12 @@ public static class CsvImportService
 {
     public static IReadOnlyList<CsvImportPreviewItem> Preview(string path, IEnumerable<MappingEntry> existingMappings, int realScale)
     {
-        var existing = existingMappings.ToDictionary(x => (x.ModbusType, x.ModbusAddress));
+        var existing = new Dictionary<(ModbusType, int), MappingEntry>();
+        foreach (var mapping in existingMappings)
+        {
+            existing.TryAdd((mapping.ModbusType, mapping.ModbusAddress), mapping);
+        }
+
         var items = new List<CsvImportPreviewItem>();
 
         var config = new CsvConfiguration(CultureInfo.InvariantCulture)
