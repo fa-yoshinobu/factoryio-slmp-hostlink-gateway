@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using GatewayApp.Services;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace GatewayApp.Models;
@@ -18,6 +19,7 @@ public enum DataDirection
     FromPlc,
 }
 
+[SuppressMessage("Naming", "CA1720:Identifier contains type name", Justification = "Values are persisted and mirror the UI data type names.")]
 public enum DisplayType
 {
     Bool,

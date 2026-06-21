@@ -7,9 +7,9 @@ using System.Text.RegularExpressions;
 
 namespace GatewayApp.Services;
 
-public sealed class CsvImportService
+public static class CsvImportService
 {
-    public IReadOnlyList<CsvImportPreviewItem> Preview(string path, IEnumerable<MappingEntry> existingMappings, int realScale)
+    public static IReadOnlyList<CsvImportPreviewItem> Preview(string path, IEnumerable<MappingEntry> existingMappings, int realScale)
     {
         var existing = existingMappings.ToDictionary(x => (x.ModbusType, x.ModbusAddress));
         var items = new List<CsvImportPreviewItem>();
@@ -99,7 +99,7 @@ public sealed class CsvImportService
         return items;
     }
 
-    public CsvImportResult Apply(IEnumerable<CsvImportPreviewItem> previewItems, ICollection<MappingEntry> mappings)
+    public static CsvImportResult Apply(IEnumerable<CsvImportPreviewItem> previewItems, ICollection<MappingEntry> mappings)
     {
         var added = 0;
         var updated = 0;

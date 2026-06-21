@@ -936,7 +936,7 @@ internal static class Program
             try
             {
                 File.WriteAllText(csvPath, "Name,Data Type,Address\r\nA,,Holding Reg 0\r\n");
-                var preview = new CsvImportService().Preview(csvPath, [], 100);
+                var preview = CsvImportService.Preview(csvPath, [], 100);
                 if (preview.Count != 1 || preview[0].Action != CsvImportAction.Skip || preview[0].Reason != "DataType is not set.")
                 {
                     failures.Add("Empty register DataType was not skipped with an explicit reason.");

@@ -129,7 +129,7 @@ public sealed class PlcClientService : IAsyncDisposable
                 return;
             }
 
-            await _slmp.WriteTypedAsync(entry.PlcAddress, GetPlcDType(entry), ConvertRawForWrite(entry, rawValue), cancellationToken)
+            await _slmp.WriteTypedAsync(entry.PlcAddress, GetPlcDType(entry), rawValue != 0, cancellationToken)
                 .ConfigureAwait(false);
             return;
         }
@@ -168,11 +168,6 @@ public sealed class PlcClientService : IAsyncDisposable
         return entry.IsBool ? string.Empty : "S";
     }
 
-    private static object ConvertRawForWrite(MappingEntry entry, int rawValue)
-    {
-        return entry.IsBool ? rawValue != 0 : ConvertRawToSignedWord(rawValue);
-    }
-
     private static short ConvertRawToSignedWord(int rawValue)
     {
         return unchecked((short)(ushort)rawValue);
@@ -187,7 +182,7 @@ public sealed class PlcClientService : IAsyncDisposable
             ushort u => u,
             int i => unchecked((ushort)i),
             uint u => unchecked((ushort)u),
-            _ => Convert.ToInt32(value),
+            _ => Convert.ToInt32(value, System.Globalization.CultureInfo.InvariantCulture),
         };
     }
 

@@ -14,7 +14,6 @@ namespace GatewayApp.ViewModels;
 public partial class MainViewModel : ObservableObject, IAsyncDisposable
 {
     private readonly SettingsService _settingsService = new();
-    private readonly CsvImportService _csvImportService = new();
     private readonly GatewayService _gatewayService = new();
     private readonly LogFileService _logFileService = new();
     private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
@@ -227,12 +226,12 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     public IReadOnlyList<CsvImportPreviewItem> PreviewCsvImport(string path)
     {
-        return _csvImportService.Preview(path, Mappings, Modbus.RealScale);
+        return CsvImportService.Preview(path, Mappings, Modbus.RealScale);
     }
 
     public void ApplyCsvImport(IReadOnlyList<CsvImportPreviewItem> previewItems)
     {
-        var result = _csvImportService.Apply(previewItems, Mappings);
+        var result = CsvImportService.Apply(previewItems, Mappings);
         ExpandModbusMaxAddressesToMappings();
         SyncMappingsToModbusAddressLimits();
         SortMappings();
@@ -397,6 +396,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         _pollTimer.Stop();
         Loc.LanguageChanged -= OnLanguageChanged;
         await _gatewayService.DisposeAsync().ConfigureAwait(false);
+        GC.SuppressFinalize(this);
     }
 
     partial void OnIsRunningChanged(bool value)

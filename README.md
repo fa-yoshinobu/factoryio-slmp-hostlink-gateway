@@ -1,5 +1,11 @@
 # Factory I/O SLMP / Host Link Gateway
 
+[![Release](https://img.shields.io/github/v/release/fa-yoshinobu/factoryio-slmp-hostlink-gateway?sort=semver)](https://github.com/fa-yoshinobu/factoryio-slmp-hostlink-gateway/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
+![Platform](https://img.shields.io/badge/platform-Windows-0078D6)
+![Static Analysis](https://img.shields.io/badge/static%20analysis-.NET%20analyzers-blue)
+
 This gateway connects the Factory I/O `Modbus TCP/IP Client` driver to a real PLC.
 
 - Factory I/O connects to this application as a Modbus TCP client.
@@ -208,6 +214,17 @@ Float display is different from the expected value:
 - Check `Scale`.
 - When `Scale=100`, integer value `1000` is displayed as `10.00`.
 - PLC and Modbus values are integer values. Only the display is divided by `Scale`.
+
+## Development Checks
+
+Run the following checks before publishing a release:
+
+```text
+dotnet build GatewayApp.sln -c Release
+dotnet run --project GatewayApp.SmokeTests\GatewayApp.SmokeTests.csproj -c Release
+```
+
+The solution enables the built-in .NET analyzers in recommended mode through `Directory.Build.props`.
 
 ## License
 
