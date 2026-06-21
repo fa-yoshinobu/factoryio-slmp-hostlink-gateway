@@ -16,6 +16,7 @@
     <sys:String x:Key="MenuTools">Tools</sys:String>
     <sys:String x:Key="MenuBulkAssign">Bulk Assign PLC Addresses</sys:String>
     <sys:String x:Key="MenuShowLog">Show Log</sys:String>
+    <sys:String x:Key="MenuAlwaysOnTop">Always on Top</sys:String>
     <sys:String x:Key="MenuLanguage">Language</sys:String>
     <sys:String x:Key="MenuHelp">Help</sys:String>
     <sys:String x:Key="MenuAbout">About</sys:String>

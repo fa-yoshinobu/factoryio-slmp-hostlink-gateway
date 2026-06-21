@@ -16,6 +16,7 @@
     <sys:String x:Key="MenuTools">ツール</sys:String>
     <sys:String x:Key="MenuBulkAssign">PLCアドレス一括割当</sys:String>
     <sys:String x:Key="MenuShowLog">ログ表示</sys:String>
+    <sys:String x:Key="MenuAlwaysOnTop">常に前面に表示</sys:String>
     <sys:String x:Key="MenuLanguage">言語</sys:String>
     <sys:String x:Key="MenuHelp">ヘルプ</sys:String>
     <sys:String x:Key="MenuAbout">バージョン情報</sys:String>

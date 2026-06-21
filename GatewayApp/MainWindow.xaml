@@ -86,6 +86,11 @@
             <MenuItem Header="{DynamicResource MenuTools}">
                 <MenuItem Header="{DynamicResource MenuBulkAssign}" Click="BulkAssign_Click" />
                 <MenuItem Header="{DynamicResource MenuShowLog}" Click="ShowLog_Click" />
+                <Separator />
+                <MenuItem x:Name="AlwaysOnTopMenuItem"
+                          Header="{DynamicResource MenuAlwaysOnTop}"
+                          IsCheckable="True"
+                          Click="AlwaysOnTop_Click" />
             </MenuItem>
             <MenuItem Header="{DynamicResource MenuLanguage}">
                 <MenuItem x:Name="EnglishLanguageMenuItem"

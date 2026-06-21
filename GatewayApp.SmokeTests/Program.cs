@@ -44,6 +44,7 @@ internal static class Program
             else
             {
                 SmokeLanguageSwitch(window, viewModel, failures);
+                SmokeAlwaysOnTopOption(window, failures);
                 SmokeErrorLogBinding(window, viewModel, failures);
                 SmokeExpectedStopExceptionSuppression(viewModel, failures);
                 SmokeRegisterForceInput(viewModel, failures);
@@ -398,6 +399,43 @@ internal static class Program
         catch (Exception ex)
         {
             failures.Add($"Language switch smoke failed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private static void SmokeAlwaysOnTopOption(MainWindow window, List<string> failures)
+    {
+        try
+        {
+            if (window.FindName("AlwaysOnTopMenuItem") is not MenuItem alwaysOnTopItem)
+            {
+                failures.Add("Always on Top menu item was not found.");
+                return;
+            }
+
+            if (window.Topmost || alwaysOnTopItem.IsChecked)
+            {
+                failures.Add("Always on Top was enabled by default.");
+            }
+
+            alwaysOnTopItem.IsChecked = true;
+            alwaysOnTopItem.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+            PumpDispatcher();
+            if (!window.Topmost || !alwaysOnTopItem.IsChecked)
+            {
+                failures.Add("Always on Top menu item did not enable window topmost.");
+            }
+
+            alwaysOnTopItem.IsChecked = false;
+            alwaysOnTopItem.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+            PumpDispatcher();
+            if (window.Topmost || alwaysOnTopItem.IsChecked)
+            {
+                failures.Add("Always on Top menu item did not disable window topmost.");
+            }
+        }
+        catch (Exception ex)
+        {
+            failures.Add($"Always on Top smoke failed: {ex.GetType().Name}: {ex.Message}");
         }
     }
 

@@ -211,6 +211,11 @@ public partial class MainWindow : Window
         _logWindow.Show();
     }
 
+    private void AlwaysOnTop_Click(object sender, RoutedEventArgs e)
+    {
+        Topmost = AlwaysOnTopMenuItem.IsChecked;
+    }
+
     private void About_Click(object sender, RoutedEventArgs e)
     {
         new AboutWindow

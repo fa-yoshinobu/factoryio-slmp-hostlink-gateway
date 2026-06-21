@@ -51,6 +51,21 @@ Default values:
 
 If Factory I/O is running on another PC, `127.0.0.1` cannot be used as the gateway listen IP. Use the LAN IP address of the gateway PC, or `0.0.0.0`. The target TCP port must also be allowed through Windows Firewall.
 
+### Factory I/O Driver Setup
+
+In Factory I/O:
+
+1. Open the `Driver` menu.
+2. Select `Modbus TCP/IP Client`.
+3. Assign the required I/O points.
+4. If you use the `Float` data type, set `Scale` in `CONFIGURATION`.
+5. Check the multiplier because `Float` values are converted to integer values. The default `100` is usually fine.
+6. If you change the Factory I/O `Scale`, change the GatewayApp Modbus `Scale` to the same value.
+7. If there are not enough I/O points, increase `Count` in `I/O Points`.
+8. Keep `Offset` set to `0`.
+9. When setup is complete, select `Tag Export` at the bottom right.
+10. Import the exported CSV file into this tool.
+
 ## PLC Simulator Settings
 
 ### GX Simulator 3
@@ -207,7 +222,7 @@ Cannot write to the PLC:
 - Check that communication is running.
 - Check that the PLC address is not empty.
 - Only Coil / Holding Register values are written to the PLC.
-- Check `PLC WRITE` / `PLC CHECK` in `Show Log`.
+- Check Force logs and PLC value mismatch warnings in `Show Log`.
 
 Float display is different from the expected value:
 
@@ -225,6 +240,16 @@ dotnet run --project GatewayApp.SmokeTests\GatewayApp.SmokeTests.csproj -c Relea
 ```
 
 The solution enables the built-in .NET analyzers in recommended mode through `Directory.Build.props`.
+
+## Used Libraries
+
+| Library | Version | Purpose |
+|---|---:|---|
+| CommunityToolkit.Mvvm | 8.4.2 | ObservableObject and RelayCommand support |
+| CsvHelper | 33.1.0 | Factory I/O tag CSV parsing |
+| NModbus | 3.0.83 | Modbus TCP slave/server |
+| PlcComm.Slmp | 0.8.0 | MELSEC SLMP PLC read/write |
+| PlcComm.KvHostLink | 0.9.0 | KEYENCE Host Link PLC read/write |
 
 ## License
 
