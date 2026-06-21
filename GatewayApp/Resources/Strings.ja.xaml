@@ -1,0 +1,142 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="LanguageEnglish">英語</sys:String>
+    <sys:String x:Key="LanguageJapanese">日本語</sys:String>
+
+    <sys:String x:Key="MenuFile">ファイル</sys:String>
+    <sys:String x:Key="MenuImportCsv">Factory I/O タグ CSV インポート</sys:String>
+    <sys:String x:Key="MenuLoadSettings">設定読み込み...</sys:String>
+    <sys:String x:Key="MenuSave">上書き保存</sys:String>
+    <sys:String x:Key="MenuSaveAs">名前を付けて保存...</sys:String>
+    <sys:String x:Key="MenuExit">終了</sys:String>
+    <sys:String x:Key="MenuCommunication">通信</sys:String>
+    <sys:String x:Key="MenuPlcSettings">PLC通信設定</sys:String>
+    <sys:String x:Key="MenuModbusSettings">Modbus通信設定</sys:String>
+    <sys:String x:Key="MenuTools">ツール</sys:String>
+    <sys:String x:Key="MenuBulkAssign">PLCアドレス一括割当</sys:String>
+    <sys:String x:Key="MenuShowLog">ログ表示</sys:String>
+    <sys:String x:Key="MenuAlwaysOnTop">常に前面に表示</sys:String>
+    <sys:String x:Key="MenuLanguage">言語</sys:String>
+    <sys:String x:Key="MenuHelp">ヘルプ</sys:String>
+    <sys:String x:Key="MenuAbout">バージョン情報</sys:String>
+
+    <sys:String x:Key="CommonCancel">キャンセル</sys:String>
+    <sys:String x:Key="CommonApply">適用</sys:String>
+    <sys:String x:Key="CommonSave">保存</sys:String>
+    <sys:String x:Key="CommonClose">閉じる</sys:String>
+    <sys:String x:Key="CommonCopy">コピー</sys:String>
+    <sys:String x:Key="CommonCopyAll">全コピー</sys:String>
+    <sys:String x:Key="CommonClearLog">ログクリア</sys:String>
+
+    <sys:String x:Key="PlcSettingsTitle">PLC通信設定</sys:String>
+    <sys:String x:Key="ModbusSettingsTitle">Modbus通信設定</sys:String>
+    <sys:String x:Key="BulkAssignTitle">PLCアドレス一括割当</sys:String>
+    <sys:String x:Key="CsvPreviewTitle">CSV インポート プレビュー</sys:String>
+    <sys:String x:Key="LogTitle">ログ</sys:String>
+    <sys:String x:Key="AboutTitle">バージョン情報</sys:String>
+
+    <sys:String x:Key="RunningCannotChange">稼働中は変更できません</sys:String>
+    <sys:String x:Key="ReadOnlyRunning">稼働中は読み取り専用です</sys:String>
+
+    <sys:String x:Key="Protocol">プロトコル</sys:String>
+    <sys:String x:Key="Host">ホスト</sys:String>
+    <sys:String x:Key="Transport">通信方式</sys:String>
+    <sys:String x:Key="Port">ポート</sys:String>
+    <sys:String x:Key="TimeoutSec">タイムアウト (秒)</sys:String>
+    <sys:String x:Key="PollingMs">ポーリング (ms)</sys:String>
+    <sys:String x:Key="Machine">機種</sys:String>
+    <sys:String x:Key="ListenIp">待受 IP</sys:String>
+    <sys:String x:Key="UnitId">ユニット ID</sys:String>
+    <sys:String x:Key="MaxAddressCoil">Coil 最大アドレス</sys:String>
+    <sys:String x:Key="MaxAddressDi">DI 最大アドレス</sys:String>
+    <sys:String x:Key="MaxAddressHr">HR 最大アドレス</sys:String>
+    <sys:String x:Key="MaxAddressIr">IR 最大アドレス</sys:String>
+
+    <sys:String x:Key="TargetModbusType">対象 Modbus 種別</sys:String>
+    <sys:String x:Key="PlcDevice">PLC デバイス</sys:String>
+    <sys:String x:Key="StartNumber">開始番号</sys:String>
+
+    <sys:String x:Key="ColumnModbusType">Modbus種別</sys:String>
+    <sys:String x:Key="ColumnModbusAddress">Modbusアドレス</sys:String>
+    <sys:String x:Key="ColumnPlcAddress">PLCアドレス</sys:String>
+    <sys:String x:Key="ColumnDisplayType">表示型</sys:String>
+    <sys:String x:Key="ColumnComment">コメント</sys:String>
+    <sys:String x:Key="ColumnAction">処理</sys:String>
+    <sys:String x:Key="ColumnName">名前</sys:String>
+    <sys:String x:Key="ColumnExistingPlc">既存 PLC</sys:String>
+    <sys:String x:Key="ColumnReason">理由</sys:String>
+
+    <sys:String x:Key="UnsavedSettings">未保存設定</sys:String>
+    <sys:String x:Key="GatewayStopped">停止中</sys:String>
+    <sys:String x:Key="GatewayRunning">稼働中</sys:String>
+    <sys:String x:Key="GatewayStopping">停止中</sys:String>
+    <sys:String x:Key="GatewayStoppedByError">通信エラーで停止</sys:String>
+    <sys:String x:Key="ModbusTcpStopped">Modbus TCP 停止</sys:String>
+    <sys:String x:Key="ModbusTcpStopping">Modbus TCP 停止中</sys:String>
+    <sys:String x:Key="ModbusTcpListening">Modbus TCP 待受中 {0}:{1}</sys:String>
+    <sys:String x:Key="ModbusTcpConnected">Modbus TCP 接続中 {0}:{1}</sys:String>
+    <sys:String x:Key="PlcDisconnected">PLC 未接続</sys:String>
+    <sys:String x:Key="PlcDisconnecting">PLC 切断中</sys:String>
+    <sys:String x:Key="PlcConnected">PLC 接続中</sys:String>
+    <sys:String x:Key="StartButton">▶ 起動</sys:String>
+    <sys:String x:Key="StopButton">■ 停止</sys:String>
+
+    <sys:String x:Key="ActionAdd">追加</sys:String>
+    <sys:String x:Key="ActionUpdate">更新</sys:String>
+    <sys:String x:Key="ActionSkip">スキップ</sys:String>
+    <sys:String x:Key="ForceNone">強制なし</sys:String>
+    <sys:String x:Key="ForceValue">強制 {0}</sys:String>
+    <sys:String x:Key="ForceOn">強制 ON</sys:String>
+    <sys:String x:Key="ForceOff">強制 OFF</sys:String>
+    <sys:String x:Key="CsvPreviewSummary">追加 {0} / 更新 {1} / スキップ {2}</sys:String>
+
+    <sys:String x:Key="SettingsSaveOverwriteCaption">上書き保存</sys:String>
+    <sys:String x:Key="SettingsLoadCaption">設定読み込み</sys:String>
+    <sys:String x:Key="SettingsSaveCaption">設定保存</sys:String>
+    <sys:String x:Key="CsvImportCaption">CSV インポート</sys:String>
+    <sys:String x:Key="ExitCaption">終了</sys:String>
+    <sys:String x:Key="BulkAssignCaption">一括割当</sys:String>
+
+    <sys:String x:Key="SettingsLoadRunning">稼働中は設定を読み込めません。停止してから読み込んでください。</sys:String>
+    <sys:String x:Key="ConfirmDeleteOutOfRangeMappings">最大アドレスを小さくすると、範囲外のマッピング {0} 件が削除されます。続行しますか？</sys:String>
+    <sys:String x:Key="ConfirmExitUnsaved">未保存の変更があります。保存せずに終了しますか？</sys:String>
+    <sys:String x:Key="SavePathMissing">保存先の設定ファイルが未指定です。名前を付けて保存してください。</sys:String>
+    <sys:String x:Key="SettingsSavedOverwrite">設定を上書き保存しました: {0}</sys:String>
+    <sys:String x:Key="SettingsSavedAs">設定を保存しました: {0}</sys:String>
+    <sys:String x:Key="SettingsLoaded">設定を読み込みました: {0}</sys:String>
+    <sys:String x:Key="CsvImportStatus">CSV インポート: 追加 {0} / 更新 {1} / スキップ {2}</sys:String>
+    <sys:String x:Key="LogWriteFailed">ログファイル書き込み失敗: {0}</sys:String>
+
+    <sys:String x:Key="PortRange">ポートは 1〜65535 で入力してください。</sys:String>
+    <sys:String x:Key="UnitIdRange">ユニット ID は 1〜247 で入力してください。</sys:String>
+    <sys:String x:Key="ScaleRange">Scale は 1 以上で入力してください。</sys:String>
+    <sys:String x:Key="IntegerRequired">{0} は整数で入力してください。</sys:String>
+    <sys:String x:Key="AddressRange">{0} は 0〜65535 で入力してください。</sys:String>
+    <sys:String x:Key="SelectPlcDevice">PLC デバイスを選択してください。</sys:String>
+    <sys:String x:Key="StartNumberInvalid">{0} の開始番号が不正です。</sys:String>
+    <sys:String x:Key="BitBankRange">{0} の下2桁は 00..15 で指定してください。</sys:String>
+    <sys:String x:Key="PlcAddressOutOfRange">PLC アドレスが範囲外です。</sys:String>
+
+    <sys:String x:Key="NumericRequired">数値を入力してください。</sys:String>
+    <sys:String x:Key="IntegerInputRequired">整数を入力してください。</sys:String>
+    <sys:String x:Key="Int16Range">Int16 範囲 (-32768〜32767) を超えています。</sys:String>
+    <sys:String x:Key="PlcNotConnected">PLC に接続されていません。</sys:String>
+    <sys:String x:Key="CommunicationNotRunning">通信が起動していません。</sys:String>
+    <sys:String x:Key="PlcAddressMissing">{0} の PLC アドレスが未設定です。</sys:String>
+    <sys:String x:Key="InvalidPlcTransport">PLC通信方式が不正です: {0}</sys:String>
+    <sys:String x:Key="PlcConnectionFailed">PLC接続に失敗しました ({0} {1} {2}:{3}, 機種={4}, タイムアウト={5}秒)。{6}</sys:String>
+    <sys:String x:Key="ResponseTimeout">応答待ちがキャンセルまたはタイムアウトしました。</sys:String>
+    <sys:String x:Key="PlcMismatch">{0} -> {1} のPLC値不一致。送信={2} / PLC={3}</sys:String>
+    <sys:String x:Key="ModbusTcpStartFailed">Modbus TCP 起動に失敗しました。</sys:String>
+
+    <sys:String x:Key="SettingsPathEmpty">設定ファイルのパスが空です。</sys:String>
+    <sys:String x:Key="SettingsContentEmpty">設定ファイルの内容が空です。</sys:String>
+    <sys:String x:Key="UnsupportedAddress">未対応 Address: {0}</sys:String>
+    <sys:String x:Key="DataTypeMissing">DataType 未設定</sys:String>
+    <sys:String x:Key="BoolOnly">Coil/Input は Bool のみ対応</sys:String>
+    <sys:String x:Key="RegisterTypeOnly">Holding/Input Register は Int または Float のみ対応</sys:String>
+    <sys:String x:Key="CsvReasonUpdate">コメント / 表示型を更新、PLCアドレスは保持</sys:String>
+    <sys:String x:Key="CsvReasonNoChange">変更なし</sys:String>
+    <sys:String x:Key="CsvReasonNew">新規追加</sys:String>
+</ResourceDictionary>

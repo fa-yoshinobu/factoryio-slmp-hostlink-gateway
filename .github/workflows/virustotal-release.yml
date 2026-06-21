@@ -1,0 +1,185 @@
+name: VirusTotal release scan
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to scan
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    name: Scan release assets
+    runs-on: ubuntu-latest
+    env:
+      TAG_NAME: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}
+      VT_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY || secrets.VT_API_KEY }}
+    steps:
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p release-assets
+          gh release download "$TAG_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir release-assets \
+            --clobber
+
+          find release-assets -type f \
+            \( -iname '*.zip' -o -iname '*.exe' -o -iname '*.msi' \) \
+            | sort > release-assets/files.txt
+
+          if [ ! -s release-assets/files.txt ]; then
+            echo "::error::No release assets found to scan. Expected .zip, .exe, or .msi assets."
+            exit 1
+          fi
+
+          echo "Release assets queued for VirusTotal:"
+          cat release-assets/files.txt
+
+      - name: Scan assets with VirusTotal
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${VT_API_KEY:-}" ]; then
+            echo "::error::Missing VirusTotal API key. Set repository secret VIRUSTOTAL_API_KEY or VT_API_KEY."
+            exit 1
+          fi
+
+          command -v jq >/dev/null 2>&1 || {
+            sudo apt-get update
+            sudo apt-get install -y jq
+          }
+
+          table="virustotal-table.md"
+          summary="virustotal-summary.md"
+          {
+            echo "| File | Malicious | Suspicious | Undetected | Harmless | Timeout | Report |"
+            echo "|---|---:|---:|---:|---:|---:|---|"
+          } > "$table"
+
+          fail=0
+          while IFS= read -r file; do
+            echo "Uploading $file"
+            size=$(stat -c%s "$file")
+            upload_url="https://www.virustotal.com/api/v3/files"
+
+            if [ "$size" -gt 33554432 ]; then
+              upload_url=$(curl --silent --show-error --fail \
+                --header "x-apikey: ${VT_API_KEY}" \
+                "https://www.virustotal.com/api/v3/files/upload_url" \
+                | jq -r '.data')
+            fi
+
+            upload_response=$(curl --silent --show-error --fail \
+              --request POST \
+              --url "$upload_url" \
+              --header "x-apikey: ${VT_API_KEY}" \
+              --form "file=@${file};filename=$(basename "$file")")
+
+            analysis_id=$(jq -r '.data.id' <<< "$upload_response")
+            if [ -z "$analysis_id" ] || [ "$analysis_id" = "null" ]; then
+              echo "::error file=$file::VirusTotal upload did not return an analysis id."
+              fail=1
+              continue
+            fi
+
+            report_file=$(mktemp)
+            status=""
+            for attempt in $(seq 1 30); do
+              curl --silent --show-error --fail \
+                --header "x-apikey: ${VT_API_KEY}" \
+                "https://www.virustotal.com/api/v3/analyses/${analysis_id}" \
+                > "$report_file"
+
+              status=$(jq -r '.data.attributes.status // empty' "$report_file")
+              if [ "$status" = "completed" ]; then
+                break
+              fi
+
+              echo "VirusTotal analysis for $(basename "$file") is ${status:-queued}; waiting..."
+              sleep 20
+            done
+
+            if [ "$status" != "completed" ]; then
+              echo "::error file=$file::VirusTotal analysis did not complete in time."
+              fail=1
+              continue
+            fi
+
+            malicious=$(jq -r '.data.attributes.stats.malicious // 0' "$report_file")
+            suspicious=$(jq -r '.data.attributes.stats.suspicious // 0' "$report_file")
+            undetected=$(jq -r '.data.attributes.stats.undetected // 0' "$report_file")
+            harmless=$(jq -r '.data.attributes.stats.harmless // 0' "$report_file")
+            timeout=$(jq -r '.data.attributes.stats.timeout // 0' "$report_file")
+            sha256=$(jq -r '.meta.file_info.sha256 // empty' "$report_file")
+
+            if [ -n "$sha256" ] && [ "$sha256" != "null" ]; then
+              report_url="https://www.virustotal.com/gui/file/${sha256}"
+            else
+              report_url="https://www.virustotal.com/gui/file-analysis/${analysis_id}"
+            fi
+
+            {
+              printf '| `%s` | %s | %s | %s | %s | %s | [report](%s) |\n' \
+                "$(basename "$file")" \
+                "$malicious" \
+                "$suspicious" \
+                "$undetected" \
+                "$harmless" \
+                "$timeout" \
+                "$report_url"
+            } >> "$table"
+
+            if [ "$malicious" -gt 0 ] || [ "$suspicious" -gt 0 ]; then
+              echo "::error file=$file::VirusTotal reported malicious=${malicious}, suspicious=${suspicious}."
+              fail=1
+            fi
+          done < release-assets/files.txt
+
+          {
+            echo "## VirusTotal release scan"
+            echo
+            cat "$table"
+          } > "$summary"
+
+          release_notes="release-notes.md"
+          updated_notes="release-notes-updated.md"
+          gh release view "$TAG_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --json body \
+            --jq '.body // ""' \
+            > "$release_notes"
+
+          awk '/^## VirusTotal Scan$/ { exit } { print }' "$release_notes" > "$updated_notes"
+          {
+            echo
+            echo "## VirusTotal Scan"
+            echo
+            if [ "$fail" -eq 0 ]; then
+              echo "Status: Passed"
+            else
+              echo "Status: Failed"
+            fi
+            echo
+            cat "$table"
+            echo
+            echo "Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          } >> "$updated_notes"
+
+          gh release edit "$TAG_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --notes-file "$updated_notes"
+
+          cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+          exit "$fail"

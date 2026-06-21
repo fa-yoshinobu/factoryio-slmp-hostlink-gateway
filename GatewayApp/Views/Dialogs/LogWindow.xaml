@@ -1,0 +1,80 @@
+<Window x:Class="GatewayApp.Views.Dialogs.LogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{DynamicResource LogTitle}"
+        Width="920"
+        Height="460"
+        MinWidth="640"
+        MinHeight="300"
+        WindowStartupLocation="CenterOwner">
+    <DockPanel Background="#202020">
+        <Grid DockPanel.Dock="Top" Height="38" Background="#303030">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="{DynamicResource LogTitle}"
+                       Foreground="#ffffff"
+                       FontWeight="Bold"
+                       VerticalAlignment="Center"
+                       Margin="12,0" />
+            <Button Grid.Column="1"
+                    Content="{DynamicResource CommonCopyAll}"
+                    Click="CopyAllLogs_Click"
+                    Padding="12,3"
+                    Margin="0,5,8,5" />
+            <Button Grid.Column="2"
+                    Content="{DynamicResource CommonClearLog}"
+                    Click="ClearLogs_Click"
+                    Padding="12,3"
+                    Margin="0,5,8,5" />
+            <Button Grid.Column="3"
+                    Content="{DynamicResource CommonClose}"
+                    Click="Close_Click"
+                    Padding="12,3"
+                    Margin="0,5,10,5" />
+        </Grid>
+
+        <ListBox x:Name="LogList"
+                 ItemsSource="{Binding Logs}"
+                 Background="#202020"
+                 BorderThickness="0"
+                 HorizontalContentAlignment="Stretch"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto">
+            <ListBox.Resources>
+                <Style TargetType="{x:Type ListBoxItem}">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="Padding" Value="0" />
+                </Style>
+            </ListBox.Resources>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Text="{Binding FullText, Mode=OneWay}"
+                                 IsReadOnly="True"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 Foreground="#ffffff"
+                                 FontFamily="Consolas"
+                                 FontSize="13"
+                                 Padding="8,2"
+                                 TextWrapping="NoWrap" />
+                        <Button Grid.Column="1"
+                                Content="{DynamicResource CommonCopy}"
+                                Tag="{Binding FullText}"
+                                Click="CopyLog_Click"
+                                Padding="8,2"
+                                Margin="4,2,8,2" />
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
+</Window>
