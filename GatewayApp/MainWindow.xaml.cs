@@ -395,7 +395,14 @@ public partial class MainWindow : Window
         _cleanupStarted = true;
         var disposeTask = ViewModel.DisposeAsync().AsTask();
         _ = disposeTask.ContinueWith(
-            task => _ = task.Exception,
+            task =>
+            {
+                var exception = task.Exception?.GetBaseException();
+                if (exception is not null && !CommunicationExceptionClassifier.IsExpectedLocalStop(exception))
+                {
+                    App.WriteExceptionLog(exception);
+                }
+            },
             TaskContinuationOptions.OnlyOnFaulted);
     }
 }

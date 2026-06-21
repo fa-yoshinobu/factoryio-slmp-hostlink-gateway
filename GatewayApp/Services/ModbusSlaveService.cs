@@ -38,10 +38,16 @@ public sealed class ModbusSlaveService : IDisposable
 
             _listenCts = new CancellationTokenSource();
             _listenTask = _network.ListenAsync(_listenCts.Token);
+            if (_listenTask.IsFaulted)
+            {
+                var exception = _listenTask.Exception?.GetBaseException()
+                    ?? new InvalidOperationException(Loc.Text("ModbusTcpStartFailed"));
+                ObserveIfFaulted(_listenTask);
+                return Task.FromException(exception);
+            }
+
             _ = ObserveListenTaskAsync(_listenTask);
-            return _listenTask.IsFaulted
-                ? Task.FromException(_listenTask.Exception?.GetBaseException() ?? new InvalidOperationException(Loc.Text("ModbusTcpStartFailed")))
-                : Task.CompletedTask;
+            return Task.CompletedTask;
         }
         catch
         {

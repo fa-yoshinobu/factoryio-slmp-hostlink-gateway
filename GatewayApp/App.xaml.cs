@@ -11,6 +11,14 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        try
+        {
+            LogFileService.ClearAllLogs();
+        }
+        catch
+        {
+        }
+
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
@@ -87,7 +95,7 @@ public partial class App : Application
         }
     }
 
-    private static void WriteExceptionLog(Exception exception)
+    internal static void WriteExceptionLog(Exception exception)
     {
         try
         {

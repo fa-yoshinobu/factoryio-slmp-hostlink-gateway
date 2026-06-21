@@ -422,6 +422,41 @@ internal static class Program
             {
                 failures.Add($"error.log was not written under the executable directory: {errorLogPath}");
             }
+
+            var tempDir = Path.Combine(Path.GetTempPath(), $"gateway-log-smoke-{Guid.NewGuid():N}");
+            try
+            {
+                Directory.CreateDirectory(tempDir);
+                var tempService = new LogFileService(tempDir);
+                var tempGatewayLogPath = Path.Combine(tempDir, "gateway.log");
+                var tempErrorLogPath = Path.Combine(tempDir, "error.log");
+
+                File.WriteAllText(tempGatewayLogPath, new string('x', 1_000_001));
+                tempService.WriteGatewayLog(new LogEntry("after-size-limit"));
+                var largeLogText = File.ReadAllText(tempGatewayLogPath);
+                if (largeLogText.Length == 0
+                    || largeLogText[0] != 'x'
+                    || !largeLogText.Contains("after-size-limit", StringComparison.Ordinal))
+                {
+                    failures.Add("gateway.log was truncated when it exceeded the old size limit.");
+                }
+
+                File.WriteAllText(tempGatewayLogPath, "old gateway");
+                File.WriteAllText(tempErrorLogPath, "old error");
+                tempService.ClearAllLogs();
+                if (File.ReadAllText(tempGatewayLogPath).Length != 0
+                    || File.ReadAllText(tempErrorLogPath).Length != 0)
+                {
+                    failures.Add("Startup log clear did not empty both gateway.log and error.log.");
+                }
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, recursive: true);
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -941,6 +976,25 @@ internal static class Program
                 {
                     failures.Add("Empty register DataType was not skipped with an explicit reason.");
                 }
+
+                var firstExisting = new MappingEntry(ModbusType.HoldingRegister, 0)
+                {
+                    Comment = "Old",
+                    DisplayType = DisplayType.Int16,
+                };
+                var duplicateExisting = new MappingEntry(ModbusType.HoldingRegister, 0)
+                {
+                    Comment = "Duplicate",
+                    DisplayType = DisplayType.Int16,
+                };
+                File.WriteAllText(csvPath, "Name,Data Type,Address\r\nA,INT,Holding Reg 0\r\n");
+                preview = CsvImportService.Preview(csvPath, [firstExisting, duplicateExisting], 100);
+                if (preview.Count != 1
+                    || preview[0].Action != CsvImportAction.Update
+                    || !ReferenceEquals(preview[0].Existing, firstExisting))
+                {
+                    failures.Add("CSV preview did not tolerate duplicate existing Modbus addresses using the first entry.");
+                }
             }
             finally
             {
@@ -1004,6 +1058,15 @@ internal static class Program
             AssertAddress("X10", "HostLink", "melsec:iq-r", "X", "0F", 1, failures, "HostLink X bit carry");
             AssertAddress("B10", "HostLink", "melsec:iq-r", "B", "F", 1, failures, "HostLink B hex carry");
             AssertAddress("DM10", "HostLink", "melsec:iq-r", "DM", "9", 1, failures, "HostLink DM decimal increment");
+
+            if (PlcAddressSequence.TryFormat("HostLink", "melsec:iq-r", "X", "2684354560", 0, out var address, out var error))
+            {
+                failures.Add($"HostLink X overflow address unexpectedly formatted as {address}.");
+            }
+            else if (error != Loc.Text("PlcAddressOutOfRange"))
+            {
+                failures.Add($"HostLink X overflow address returned wrong error. Expected '{Loc.Text("PlcAddressOutOfRange")}', got '{error}'.");
+            }
         }
         catch (Exception ex)
         {

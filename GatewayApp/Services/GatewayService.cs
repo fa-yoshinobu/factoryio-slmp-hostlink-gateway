@@ -160,15 +160,8 @@ public sealed class GatewayService : IAsyncDisposable
     private async Task<int?> WriteAndCheckAsync(MappingEntry entry, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        TraceReported?.Invoke(
-            $"PLC WRITE {_plc.ActiveProtocol} {(entry.IsRegister ? "S16" : "BIT")} {entry.PlcAddress} <= {FormatRaw(entry, entry.EffectiveRawValue)}");
         await _plc.WriteRawAsync(entry, entry.EffectiveRawValue, cancellationToken);
-        TraceReported?.Invoke("PLC WRITE API OK");
-
-        var plcValue = await _plc.ReadRawAsync(entry, cancellationToken);
-        TraceReported?.Invoke(
-            $"PLC CHECK {_plc.ActiveProtocol} {(entry.IsRegister ? "S16" : "BIT")} {entry.PlcAddress} => {(plcValue.HasValue ? FormatRaw(entry, plcValue.Value) : "null")}");
-        return plcValue;
+        return await _plc.ReadRawAsync(entry, cancellationToken);
     }
 
     private static bool RawMatches(MappingEntry entry, int left, int right)
