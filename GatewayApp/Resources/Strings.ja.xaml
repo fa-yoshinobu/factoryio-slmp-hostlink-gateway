@@ -79,6 +79,11 @@
     <sys:String x:Key="PlcDisconnected">PLC 未接続</sys:String>
     <sys:String x:Key="PlcDisconnecting">PLC 切断中</sys:String>
     <sys:String x:Key="PlcConnected">PLC 接続中</sys:String>
+    <sys:String x:Key="PlcModeUnavailable">PLC モード: --</sys:String>
+    <sys:String x:Key="PlcModeRun">PLC モード: RUN</sys:String>
+    <sys:String x:Key="PlcModeStop">PLC モード: STOP</sys:String>
+    <sys:String x:Key="PlcModePause">PLC モード: PAUSE</sys:String>
+    <sys:String x:Key="PlcModeProgram">PLC モード: PROGRAM</sys:String>
     <sys:String x:Key="StartButton">▶ 起動</sys:String>
     <sys:String x:Key="StopButton">■ 停止</sys:String>
 
@@ -126,6 +131,7 @@
     <sys:String x:Key="PlcAddressMissing">{0} の PLC アドレスが未設定です。</sys:String>
     <sys:String x:Key="InvalidPlcTransport">PLC通信方式が不正です: {0}</sys:String>
     <sys:String x:Key="PlcConnectionFailed">PLC接続に失敗しました ({0} {1} {2}:{3}, 機種={4}, タイムアウト={5}秒)。{6}</sys:String>
+    <sys:String x:Key="PlcModeReadFailed">PLC モード取得失敗: {0}</sys:String>
     <sys:String x:Key="ResponseTimeout">応答待ちがキャンセルまたはタイムアウトしました。</sys:String>
     <sys:String x:Key="PlcMismatch">{0} -> {1} のPLC値不一致。送信={2} / PLC={3}</sys:String>
     <sys:String x:Key="ModbusTcpStartFailed">Modbus TCP 起動に失敗しました。</sys:String>

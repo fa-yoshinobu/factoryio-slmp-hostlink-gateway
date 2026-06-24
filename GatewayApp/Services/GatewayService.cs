@@ -85,6 +85,27 @@ public sealed class GatewayService : IAsyncDisposable
 
     public void WriteModbusRaw(MappingEntry entry, int rawValue) => _modbus.WriteRaw(entry, rawValue);
 
+    public async Task<PlcOperationMode> ReadPlcOperationModeAsync(CancellationToken cancellationToken = default)
+    {
+        await _operationGate.WaitAsync(cancellationToken);
+        try
+        {
+            ThrowIfDisposed();
+            var runToken = GetRunToken(cancellationToken);
+
+            if (!_plc.IsConnected)
+            {
+                throw new InvalidOperationException(Loc.Text("PlcNotConnected"));
+            }
+
+            return await _plc.ReadOperationModeAsync(runToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _operationGate.Release();
+        }
+    }
+
     public async Task PollPlcAsync(IEnumerable<MappingEntry> mappings, CancellationToken cancellationToken = default)
     {
         await _operationGate.WaitAsync(cancellationToken);

@@ -1021,9 +1021,11 @@ internal static class Program
             var ledConverter = new LedStateConverter();
             AssertBrush(Color.FromRgb(0x5a, 0x3a, 0x00), ledConverter.Convert(LedState.ForceOff, typeof(Brush), string.Empty, CultureInfo.InvariantCulture), failures, "ForceOff LED brush");
 
-            if (viewModel.ModbusCycleText != "Modbus Cycle: --" || viewModel.PlcCycleText != "PLC Cycle: --")
+            if (viewModel.ModbusCycleText != "Modbus Cycle: --"
+                || viewModel.PlcCycleText != "PLC Cycle: --"
+                || viewModel.PlcModeStatus != "PLC Mode: --")
             {
-                failures.Add($"Initial cycle status text mismatch. Modbus='{viewModel.ModbusCycleText}', PLC='{viewModel.PlcCycleText}'.");
+                failures.Add($"Initial status text mismatch. Modbus='{viewModel.ModbusCycleText}', PLC='{viewModel.PlcCycleText}', PLC mode='{viewModel.PlcModeStatus}'.");
             }
 
             if (typeof(MappingEntrySettings).GetProperty("Direction") is not null)

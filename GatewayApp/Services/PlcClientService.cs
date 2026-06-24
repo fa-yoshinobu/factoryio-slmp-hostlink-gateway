@@ -5,6 +5,15 @@ using System.Net.Sockets;
 
 namespace GatewayApp.Services;
 
+public enum PlcOperationMode
+{
+    Unknown,
+    Run,
+    Stop,
+    Pause,
+    Program,
+}
+
 public sealed class PlcClientService : IAsyncDisposable
 {
     private const int MaxBlockPoints = 64;
@@ -18,6 +27,34 @@ public sealed class PlcClientService : IAsyncDisposable
     public string ActiveProtocol => _slmp is not null
         ? "SLMP"
         : _hostLink is not null ? "HostLink" : "None";
+
+    public async Task<PlcOperationMode> ReadOperationModeAsync(CancellationToken cancellationToken = default)
+    {
+        if (_slmp is not null)
+        {
+            var state = await _slmp.ReadCpuOperationStateAsync(cancellationToken).ConfigureAwait(false);
+            return state.Status switch
+            {
+                SlmpCpuOperationStatus.Run => PlcOperationMode.Run,
+                SlmpCpuOperationStatus.Stop => PlcOperationMode.Stop,
+                SlmpCpuOperationStatus.Pause => PlcOperationMode.Pause,
+                _ => PlcOperationMode.Unknown,
+            };
+        }
+
+        if (_hostLink is not null)
+        {
+            var mode = await _hostLink.ConfirmOperatingModeAsync(cancellationToken).ConfigureAwait(false);
+            return mode switch
+            {
+                KvPlcMode.Run => PlcOperationMode.Run,
+                KvPlcMode.Program => PlcOperationMode.Program,
+                _ => PlcOperationMode.Unknown,
+            };
+        }
+
+        throw new InvalidOperationException(Loc.Text("PlcNotConnected"));
+    }
 
     public async Task ConnectAsync(PlcSettings settings, CancellationToken cancellationToken = default)
     {

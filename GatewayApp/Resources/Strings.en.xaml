@@ -79,6 +79,11 @@
     <sys:String x:Key="PlcDisconnected">PLC disconnected</sys:String>
     <sys:String x:Key="PlcDisconnecting">PLC disconnecting</sys:String>
     <sys:String x:Key="PlcConnected">PLC connected</sys:String>
+    <sys:String x:Key="PlcModeUnavailable">PLC Mode: --</sys:String>
+    <sys:String x:Key="PlcModeRun">PLC Mode: RUN</sys:String>
+    <sys:String x:Key="PlcModeStop">PLC Mode: STOP</sys:String>
+    <sys:String x:Key="PlcModePause">PLC Mode: PAUSE</sys:String>
+    <sys:String x:Key="PlcModeProgram">PLC Mode: PROGRAM</sys:String>
     <sys:String x:Key="StartButton">▶ Start</sys:String>
     <sys:String x:Key="StopButton">■ Stop</sys:String>
 
@@ -126,6 +131,7 @@
     <sys:String x:Key="PlcAddressMissing">{0} PLC address is not set.</sys:String>
     <sys:String x:Key="InvalidPlcTransport">Invalid PLC transport: {0}</sys:String>
     <sys:String x:Key="PlcConnectionFailed">PLC connection failed ({0} {1} {2}:{3}, model={4}, timeout={5} sec). {6}</sys:String>
+    <sys:String x:Key="PlcModeReadFailed">PLC mode read failed: {0}</sys:String>
     <sys:String x:Key="ResponseTimeout">Response wait was canceled or timed out.</sys:String>
     <sys:String x:Key="PlcMismatch">{0} -> {1} PLC value mismatch. Sent={2} / PLC={3}</sys:String>
     <sys:String x:Key="ModbusTcpStartFailed">Modbus TCP failed to start.</sys:String>

@@ -13,14 +13,18 @@ namespace GatewayApp.ViewModels;
 
 public partial class MainViewModel : ObservableObject, IAsyncDisposable
 {
+    private static readonly TimeSpan PlcModeRefreshInterval = TimeSpan.FromMilliseconds(500);
     private readonly SettingsService _settingsService = new();
     private readonly GatewayService _gatewayService = new();
     private readonly LogFileService _logFileService = new();
     private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
     private readonly DispatcherTimer _pollTimer;
+    private DateTime _nextPlcModeRefreshUtc = DateTime.MinValue;
+    private PlcOperationMode? _plcMode;
     private bool _pollInFlight;
     private bool _suppressDirty;
     private bool _gatewayLogFailureReported;
+    private bool _plcModeReadFailureReported;
 
     [ObservableProperty]
     private PlcSettings _plc = new();
@@ -45,6 +49,9 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     [ObservableProperty]
     private string _plcStatus = Loc.Text("PlcDisconnected");
+
+    [ObservableProperty]
+    private string _plcModeStatus = Loc.Text("PlcModeUnavailable");
 
     [ObservableProperty]
     private string _statusMessage = string.Empty;
@@ -138,6 +145,8 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
             GatewayStatus = Loc.Text("GatewayRunning");
             RefreshModbusStatus();
             PlcStatus = Loc.Text("PlcConnected");
+            ResetPlcModeStatus();
+            await RefreshPlcModeStatusAsync(force: true).ConfigureAwait(true);
             OnPropertyChanged(nameof(ModbusCycleText));
             OnPropertyChanged(nameof(PlcCycleText));
             _pollTimer.Interval = TimeSpan.FromMilliseconds(Math.Max(10, Plc.PollingMs));
@@ -148,6 +157,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
             GatewayStatus = Loc.Text("GatewayStopped");
             ModbusStatus = Loc.Text("ModbusTcpStopped");
             PlcStatus = Loc.Text("PlcDisconnected");
+            ResetPlcModeStatus();
             OnPropertyChanged(nameof(ModbusCycleText));
             OnPropertyChanged(nameof(PlcCycleText));
             ReportError(ex.Message);
@@ -453,12 +463,14 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
             GatewayStatus = Loc.Text("GatewayRunning");
             RefreshModbusStatus();
             PlcStatus = Loc.Text("PlcConnected");
+            PlcModeStatus = FormatPlcModeStatus(_plcMode);
         }
         else
         {
             GatewayStatus = Loc.Text("GatewayStopped");
             ModbusStatus = Loc.Text("ModbusTcpStopped");
             PlcStatus = Loc.Text("PlcDisconnected");
+            ResetPlcModeStatus();
         }
 
         foreach (var entry in Mappings)
@@ -521,6 +533,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         try
         {
             await _gatewayService.PollPlcAsync(Mappings).ConfigureAwait(true);
+            await RefreshPlcModeStatusAsync().ConfigureAwait(true);
             OnPropertyChanged(nameof(PlcCycleText));
             ClearStatus();
         }
@@ -544,6 +557,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         GatewayStatus = gatewayStatus;
         ModbusStatus = Loc.Text("ModbusTcpStopping");
         PlcStatus = Loc.Text("PlcDisconnecting");
+        ResetPlcModeStatus();
 
         try
         {
@@ -556,6 +570,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         {
             ModbusStatus = Loc.Text("ModbusTcpStopped");
             PlcStatus = Loc.Text("PlcDisconnected");
+            ResetPlcModeStatus();
             OnPropertyChanged(nameof(ModbusCycleText));
             OnPropertyChanged(nameof(PlcCycleText));
         }
@@ -604,6 +619,54 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
             ? "ModbusTcpConnected"
             : "ModbusTcpListening";
         ModbusStatus = Loc.Format(key, Modbus.ListenIp, Modbus.Port);
+    }
+
+    private async Task RefreshPlcModeStatusAsync(bool force = false)
+    {
+        if (!IsRunning)
+        {
+            ResetPlcModeStatus();
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        if (!force && now < _nextPlcModeRefreshUtc)
+        {
+            return;
+        }
+
+        _nextPlcModeRefreshUtc = now.Add(PlcModeRefreshInterval);
+
+        try
+        {
+            _plcMode = await _gatewayService.ReadPlcOperationModeAsync().ConfigureAwait(true);
+            PlcModeStatus = FormatPlcModeStatus(_plcMode);
+            _plcModeReadFailureReported = false;
+        }
+        catch (OperationCanceledException) when (!IsRunning)
+        {
+        }
+        catch (Exception ex) when (!IsRunning && CommunicationExceptionClassifier.IsExpectedLocalStop(ex))
+        {
+        }
+        catch (Exception ex)
+        {
+            _plcMode = null;
+            PlcModeStatus = FormatPlcModeStatus(_plcMode);
+            if (!_plcModeReadFailureReported)
+            {
+                _plcModeReadFailureReported = true;
+                ReportLog(Loc.Format("PlcModeReadFailed", ex.Message));
+            }
+        }
+    }
+
+    private void ResetPlcModeStatus()
+    {
+        _plcMode = null;
+        _nextPlcModeRefreshUtc = DateTime.MinValue;
+        _plcModeReadFailureReported = false;
+        PlcModeStatus = FormatPlcModeStatus(_plcMode);
     }
 
     private void ReportError(string message)
@@ -907,6 +970,18 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         return milliseconds.Value < 1.0
             ? $"{label}: <1 ms"
             : $"{label}: {milliseconds.Value.ToString("0", CultureInfo.InvariantCulture)} ms";
+    }
+
+    private static string FormatPlcModeStatus(PlcOperationMode? mode)
+    {
+        return mode switch
+        {
+            PlcOperationMode.Run => Loc.Text("PlcModeRun"),
+            PlcOperationMode.Stop => Loc.Text("PlcModeStop"),
+            PlcOperationMode.Pause => Loc.Text("PlcModePause"),
+            PlcOperationMode.Program => Loc.Text("PlcModeProgram"),
+            _ => Loc.Text("PlcModeUnavailable"),
+        };
     }
 
     private static bool TryParseRegisterInput(MappingEntry entry, string input, out int raw, out string error)
