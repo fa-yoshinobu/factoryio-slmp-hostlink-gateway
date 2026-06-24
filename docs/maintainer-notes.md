@@ -18,9 +18,11 @@ The solution enables the built-in .NET analyzers in recommended mode through `Di
 Publish releases from GitHub Actions:
 
 1. Update the version in `GatewayApp/GatewayApp.csproj`.
-2. Push `main`.
-3. Open `Actions` -> `Release` -> `Run workflow`.
-4. Leave `version` empty to use the project version, or enter the same version as `GatewayApp.csproj`.
+2. Update `CHANGELOG.md` with user-visible changes.
+3. Confirm `TODO.md` has no stale completed items.
+4. Push `main`.
+5. Open `Actions` -> `Release` -> `Run workflow`.
+6. Leave `version` empty to use the project version, or enter the same version as `GatewayApp.csproj`.
 
 The release workflow creates:
 

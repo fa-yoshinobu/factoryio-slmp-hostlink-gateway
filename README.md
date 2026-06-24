@@ -232,6 +232,12 @@ Float display is different from the expected value:
 - When `Scale=100`, integer value `1000` is displayed as `10.00`.
 - PLC and Modbus values are integer values. Only the display is divided by `Scale`.
 
+## Documentation
+
+- [Changelog](CHANGELOG.md)
+- [TODO](TODO.md)
+- [Maintainer notes](docs/maintainer-notes.md)
+
 ## Used Libraries
 
 | Library | Version | Purpose |
@@ -239,8 +245,8 @@ Float display is different from the expected value:
 | CommunityToolkit.Mvvm | 8.4.2 | ObservableObject and RelayCommand support |
 | CsvHelper | 33.1.0 | Factory I/O tag CSV parsing |
 | NModbus | 3.0.83 | Modbus TCP slave/server |
-| PlcComm.Slmp | 0.8.0 | MELSEC SLMP PLC read/write |
-| PlcComm.KvHostLink | 0.9.0 | KEYENCE Host Link PLC read/write |
+| PlcComm.Slmp | 1.0.0 | MELSEC SLMP PLC read/write |
+| PlcComm.KvHostLink | 1.0.0 | KEYENCE Host Link PLC read/write |
 
 ## License
 
