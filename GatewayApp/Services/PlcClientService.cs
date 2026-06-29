@@ -124,27 +124,18 @@ public sealed class PlcClientService : IAsyncDisposable
             return null;
         }
 
+        var address = PlcTypedAddressParser.ParseRequired(entry.PlcAddress, entry);
         if (_slmp is not null)
         {
-            if (entry.IsRegister)
-            {
-                var registerValue = await _slmp.ReadTypedAsync(entry.PlcAddress, "S", cancellationToken).ConfigureAwait(false);
-                return ConvertPlcValueToRaw(registerValue);
-            }
-
-            var value = await _slmp.ReadTypedAsync(entry.PlcAddress, GetPlcDType(entry), cancellationToken).ConfigureAwait(false);
+            var value = await _slmp.ReadTypedAsync(address.BaseAddress, address.DataType, cancellationToken).ConfigureAwait(false);
             return ConvertPlcValueToRaw(value);
         }
 
         if (_hostLink is not null)
         {
-            if (entry.IsRegister)
-            {
-                var registerValue = await _hostLink.ReadTypedAsync(entry.PlcAddress, "S", cancellationToken).ConfigureAwait(false);
-                return ConvertPlcValueToRaw(registerValue);
-            }
-
-            var value = await _hostLink.ReadTypedAsync(entry.PlcAddress, GetHostLinkDType(entry), cancellationToken).ConfigureAwait(false);
+            var value = address.DataType == "BIT"
+                ? await ReadHostLinkBitAsync(address.BaseAddress, cancellationToken).ConfigureAwait(false)
+                : await _hostLink.ReadTypedAsync(address.BaseAddress, address.DataType, cancellationToken).ConfigureAwait(false);
             return ConvertPlcValueToRaw(value);
         }
 
@@ -195,31 +186,16 @@ public sealed class PlcClientService : IAsyncDisposable
 
         if (_slmp is not null)
         {
-            if (entry.IsRegister)
-            {
-                await _slmp.WriteTypedAsync(entry.PlcAddress, "S", ConvertRawToSignedWord(rawValue), cancellationToken)
-                    .ConfigureAwait(false);
-                return;
-            }
-
-            await _slmp.WriteTypedAsync(entry.PlcAddress, GetPlcDType(entry), rawValue != 0, cancellationToken)
+            var address = PlcTypedAddressParser.ParseRequired(entry.PlcAddress, entry);
+            await _slmp.WriteTypedAsync(address.BaseAddress, address.DataType, ConvertRawForSlmp(address, rawValue), cancellationToken)
                 .ConfigureAwait(false);
             return;
         }
 
         if (_hostLink is not null)
         {
-            if (entry.IsBool)
-            {
-                await _hostLink.WriteTypedAsync(entry.PlcAddress, string.Empty, rawValue != 0 ? 1 : 0, cancellationToken)
-                    .ConfigureAwait(false);
-            }
-            else
-            {
-                await _hostLink.WriteTypedAsync(entry.PlcAddress, "S", ConvertRawToSignedWord(rawValue), cancellationToken)
-                    .ConfigureAwait(false);
-            }
-
+            var address = PlcTypedAddressParser.ParseRequired(entry.PlcAddress, entry);
+            await WriteHostLinkTypedAsync(address, rawValue, cancellationToken).ConfigureAwait(false);
             return;
         }
 
@@ -263,14 +239,30 @@ public sealed class PlcClientService : IAsyncDisposable
         await DisconnectAsync().ConfigureAwait(false);
     }
 
-    private static string GetPlcDType(MappingEntry entry)
+    private static object ConvertRawForSlmp(PlcTypedAddress address, int rawValue)
     {
-        return entry.IsBool ? "BIT" : "S";
+        return address.DataType switch
+        {
+            "BIT" => rawValue != 0,
+            "U" => unchecked((ushort)rawValue),
+            _ => ConvertRawToSignedWord(rawValue),
+        };
     }
 
-    private static string GetHostLinkDType(MappingEntry entry)
+    private Task WriteHostLinkTypedAsync(PlcTypedAddress address, int rawValue, CancellationToken cancellationToken)
     {
-        return entry.IsBool ? string.Empty : "S";
+        return address.DataType switch
+        {
+            "BIT" => _hostLink!.WriteAsync(address.BaseAddress, rawValue != 0 ? 1 : 0, dataFormat: string.Empty, cancellationToken),
+            "U" => _hostLink!.WriteTypedAsync(address.BaseAddress, "U", unchecked((ushort)rawValue), cancellationToken),
+            _ => _hostLink!.WriteTypedAsync(address.BaseAddress, "S", ConvertRawToSignedWord(rawValue), cancellationToken),
+        };
+    }
+
+    private async Task<object> ReadHostLinkBitAsync(string baseAddress, CancellationToken cancellationToken)
+    {
+        var tokens = await _hostLink!.ReadAsync(baseAddress, dataFormat: string.Empty, cancellationToken).ConfigureAwait(false);
+        return tokens.FirstOrDefault() ?? "0";
     }
 
     private static short ConvertRawToSignedWord(int rawValue)
@@ -450,26 +442,28 @@ public sealed class PlcClientService : IAsyncDisposable
         {
             if (_slmp is not null)
             {
-                var address = SlmpAddress.Parse(entry.PlcAddress, _slmp.PlcProfile);
+                var typedAddress = PlcTypedAddressParser.ParseRequired(entry.PlcAddress, entry);
+                var address = SlmpAddress.Parse(typedAddress.BaseAddress, _slmp.PlcProfile);
                 point = new PlcAccessPoint(
                     entry,
                     entry.IsRegister,
                     address.Code.ToString(),
                     address.Number,
-                    entry.PlcAddress,
+                    typedAddress.BaseAddress,
                     address);
                 return true;
             }
 
             if (_hostLink is not null)
             {
-                var address = KvHostLinkAddress.Parse(entry.PlcAddress);
+                var typedAddress = PlcTypedAddressParser.ParseRequired(entry.PlcAddress, entry);
+                var address = KvHostLinkAddress.Parse(typedAddress.BaseAddress);
                 point = new PlcAccessPoint(
                     entry,
                     entry.IsRegister,
                     $"{address.DeviceType}:{address.Suffix}",
                     checked((uint)address.Number),
-                    entry.PlcAddress,
+                    typedAddress.BaseAddress,
                     null);
                 return true;
             }

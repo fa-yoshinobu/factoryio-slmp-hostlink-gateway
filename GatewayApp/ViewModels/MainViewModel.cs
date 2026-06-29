@@ -310,7 +310,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
                 return;
             }
 
-            addresses.Add(address);
+            addresses.Add(PlcTypedAddressParser.AppendDefaultSuffix(modbusType, address));
         }
 
         for (var index = 0; index < entries.Count; index++)

@@ -56,6 +56,7 @@ internal static class Program
                 SmokePlcConnectionFailureMessage(failures);
                 SmokeBulkAssignDeviceOptions(failures);
                 SmokePlcAddressSequence(failures);
+                SmokeTypedPlcAddresses(failures);
                 SmokeValueBrushConverter(failures);
                 SmokeTodoFixes(viewModel, failures);
                 SmokeLogWindow(viewModel, failures);
@@ -1153,6 +1154,55 @@ internal static class Program
         catch (Exception ex)
         {
             failures.Add($"PLC address sequence smoke failed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private static void SmokeTypedPlcAddresses(List<string> failures)
+    {
+        try
+        {
+            var bitEntry = new MappingEntry(ModbusType.Coil, 0) { PlcAddress = "M0:BIT" };
+            var bitAddress = PlcTypedAddressParser.ParseRequired(bitEntry.PlcAddress, bitEntry);
+            AssertEqual("M0", bitAddress.BaseAddress, failures, "Typed bit base address");
+            AssertEqual("BIT", bitAddress.DataType, failures, "Typed bit data type");
+
+            var registerEntry = new MappingEntry(ModbusType.HoldingRegister, 0) { PlcAddress = "D0:U" };
+            var registerAddress = PlcTypedAddressParser.ParseRequired(registerEntry.PlcAddress, registerEntry);
+            AssertEqual("D0", registerAddress.BaseAddress, failures, "Typed register base address");
+            AssertEqual("U", registerAddress.DataType, failures, "Typed register data type");
+
+            AssertEqual("M0:BIT", PlcTypedAddressParser.AppendDefaultSuffix(ModbusType.Coil, "M0"), failures, "Bulk bool suffix");
+            AssertEqual("D0:S", PlcTypedAddressParser.AppendDefaultSuffix(ModbusType.HoldingRegister, "D0"), failures, "Bulk register suffix");
+
+            var legacyBitAddress = PlcTypedAddressParser.ParseRequired("M1", new MappingEntry(ModbusType.Coil, 1));
+            AssertEqual("M1", legacyBitAddress.BaseAddress, failures, "Legacy bit base address");
+            AssertEqual("BIT", legacyBitAddress.DataType, failures, "Legacy bit default data type");
+
+            var legacyRegisterAddress = PlcTypedAddressParser.ParseRequired("D1", new MappingEntry(ModbusType.HoldingRegister, 1));
+            AssertEqual("D1", legacyRegisterAddress.BaseAddress, failures, "Legacy register base address");
+            AssertEqual("S", legacyRegisterAddress.DataType, failures, "Legacy register default data type");
+
+            if (TryParseTypedAddress(new MappingEntry(ModbusType.Coil, 2) { PlcAddress = "M2:U" }))
+            {
+                failures.Add("Bool PLC address with non-BIT data type was accepted.");
+            }
+        }
+        catch (Exception ex)
+        {
+            failures.Add($"Typed PLC address smoke failed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private static bool TryParseTypedAddress(MappingEntry entry)
+    {
+        try
+        {
+            _ = PlcTypedAddressParser.ParseRequired(entry.PlcAddress, entry);
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
         }
     }
 

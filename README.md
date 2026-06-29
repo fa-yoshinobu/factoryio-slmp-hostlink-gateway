@@ -22,7 +22,7 @@ This gateway connects the Factory I/O `Modbus TCP/IP Client` driver to a real PL
 3. Open `Communication` -> `Modbus Communication Settings` and set the IP / Port / Unit ID that Factory I/O will use.
 4. Export the tag CSV from Factory I/O.
 5. Open `File` -> `Factory I/O Tag CSV Import` and import the CSV.
-6. Enter PLC addresses in `Mapping`.
+6. Enter PLC addresses in `Mapping`, for example `M0`, `M0:BIT`, `D0`, or `D0:U`.
 7. If needed, use `Tools` -> `Bulk Assign PLC Addresses` to assign PLC addresses in sequence.
 8. Save the settings with `File` -> `Save As...`.
 9. In Factory I/O, select the `Modbus TCP/IP Client` driver and connect to the gateway.
@@ -112,7 +112,7 @@ Verified environment:
 
 ## Mapping Notes
 
-Rows with an empty PLC address are not used for communication.
+Rows with an empty PLC address are not used for communication. PLC addresses can include an optional data type suffix: bool mappings use `:BIT`, and register mappings use `:S` or `:U`. When omitted, bool rows default to `:BIT` and register rows default to `:S`.
 
 | Modbus Type | Direction | Display Type |
 |---|---|---|
@@ -146,6 +146,7 @@ Supported Data Type values:
 ## Bulk Assign PLC Addresses
 
 `Bulk Assign PLC Addresses` assigns sequential PLC addresses to the selected Modbus type.
+Generated addresses include the default data type suffix (`:BIT` for bool rows and `:S` for register rows).
 
 Available devices:
 
@@ -245,8 +246,8 @@ Float display is different from the expected value:
 | CommunityToolkit.Mvvm | 8.4.2 | ObservableObject and RelayCommand support |
 | CsvHelper | 33.1.0 | Factory I/O tag CSV parsing |
 | NModbus | 3.0.83 | Modbus TCP slave/server |
-| PlcComm.Slmp | 1.0.0 | MELSEC SLMP PLC read/write |
-| PlcComm.KvHostLink | 1.0.0 | KEYENCE Host Link PLC read/write |
+| PlcComm.Slmp | 1.1.1 | MELSEC SLMP PLC read/write |
+| PlcComm.KvHostLink | 1.1.1 | KEYENCE Host Link PLC read/write |
 
 ## License
 

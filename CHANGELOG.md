@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-06-29
+
+### Changed
+- Updated PLC communication package references to `PlcComm.Slmp` and `PlcComm.KvHostLink` `1.1.1`.
+- Updated Host Link bit read/write handling for the latest `PlcComm.KvHostLink` API.
+- Kept existing PLC address entries such as `X4`, `Y0`, and `D0` compatible by applying default internal data types when no suffix is entered.
+- Documented optional PLC address data type suffixes (`:BIT`, `:S`, and `:U`) and bulk assignment defaults.
+
 ## [1.0.0] - 2026-06-24
 
 ### Changed
