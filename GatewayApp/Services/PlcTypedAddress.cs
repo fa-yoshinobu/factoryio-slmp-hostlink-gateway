@@ -6,8 +6,6 @@ public sealed record PlcTypedAddress(string BaseAddress, string DataType);
 
 public static class PlcTypedAddressParser
 {
-    private static readonly HashSet<string> RegisterDataTypes = ["S", "U"];
-
     public static PlcTypedAddress ParseRequired(string rawAddress, MappingEntry entry)
     {
         if (string.IsNullOrWhiteSpace(rawAddress))
@@ -15,43 +13,18 @@ public static class PlcTypedAddressParser
             throw new InvalidOperationException(Loc.Format("PlcAddressMissing", entry.ModbusLabel));
         }
 
-        var separatorIndex = rawAddress.LastIndexOf(':');
-        if (separatorIndex < 0)
+        var address = NormalizeAddress(rawAddress);
+        if (address.Contains(':'))
         {
-            return new PlcTypedAddress(rawAddress.Trim().ToUpperInvariant(), DefaultDataType(entry));
+            throw new InvalidOperationException($"{entry.ModbusLabel} PLC address is invalid.");
         }
 
-        if (separatorIndex == 0 || separatorIndex == rawAddress.Length - 1)
-        {
-            throw new InvalidOperationException($"{entry.ModbusLabel} PLC address must include a base address and data type suffix.");
-        }
-
-        var baseAddress = rawAddress[..separatorIndex].Trim();
-        var dataType = rawAddress[(separatorIndex + 1)..].Trim().TrimStart('.').ToUpperInvariant();
-        if (baseAddress.Length == 0 || dataType.Length == 0)
-        {
-            throw new InvalidOperationException($"{entry.ModbusLabel} PLC address must include a base address and data type suffix.");
-        }
-
-        if (entry.IsBool)
-        {
-            if (dataType != "BIT")
-            {
-                throw new InvalidOperationException($"{entry.ModbusLabel} PLC address must use :BIT.");
-            }
-        }
-        else if (!RegisterDataTypes.Contains(dataType))
-        {
-            throw new InvalidOperationException($"{entry.ModbusLabel} PLC address must use :S or :U.");
-        }
-
-        return new PlcTypedAddress(baseAddress.ToUpperInvariant(), dataType);
+        return new PlcTypedAddress(address, DefaultDataType(entry));
     }
 
-    public static string AppendDefaultSuffix(ModbusType modbusType, string baseAddress)
+    public static string NormalizeAddress(string rawAddress)
     {
-        var dataType = MappingEntry.IsRegisterType(modbusType) ? "S" : "BIT";
-        return $"{baseAddress}:{dataType}";
+        return rawAddress.Trim().ToUpperInvariant();
     }
 
     private static string DefaultDataType(MappingEntry entry)

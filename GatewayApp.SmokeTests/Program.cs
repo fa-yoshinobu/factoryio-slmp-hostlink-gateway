@@ -1161,30 +1161,27 @@ internal static class Program
     {
         try
         {
-            var bitEntry = new MappingEntry(ModbusType.Coil, 0) { PlcAddress = "M0:BIT" };
+            var bitEntry = new MappingEntry(ModbusType.Coil, 0) { PlcAddress = "M0" };
             var bitAddress = PlcTypedAddressParser.ParseRequired(bitEntry.PlcAddress, bitEntry);
             AssertEqual("M0", bitAddress.BaseAddress, failures, "Typed bit base address");
             AssertEqual("BIT", bitAddress.DataType, failures, "Typed bit data type");
 
-            var registerEntry = new MappingEntry(ModbusType.HoldingRegister, 0) { PlcAddress = "D0:U" };
+            var registerEntry = new MappingEntry(ModbusType.HoldingRegister, 0) { PlcAddress = "D0" };
             var registerAddress = PlcTypedAddressParser.ParseRequired(registerEntry.PlcAddress, registerEntry);
             AssertEqual("D0", registerAddress.BaseAddress, failures, "Typed register base address");
-            AssertEqual("U", registerAddress.DataType, failures, "Typed register data type");
+            AssertEqual("S", registerAddress.DataType, failures, "Typed register data type");
 
-            AssertEqual("M0:BIT", PlcTypedAddressParser.AppendDefaultSuffix(ModbusType.Coil, "M0"), failures, "Bulk bool suffix");
-            AssertEqual("D0:S", PlcTypedAddressParser.AppendDefaultSuffix(ModbusType.HoldingRegister, "D0"), failures, "Bulk register suffix");
+            AssertEqual("M1", PlcTypedAddressParser.NormalizeAddress("m1"), failures, "Bulk bool address");
+            AssertEqual("D1", PlcTypedAddressParser.NormalizeAddress("d1"), failures, "Bulk register address");
 
-            var legacyBitAddress = PlcTypedAddressParser.ParseRequired("M1", new MappingEntry(ModbusType.Coil, 1));
-            AssertEqual("M1", legacyBitAddress.BaseAddress, failures, "Legacy bit base address");
-            AssertEqual("BIT", legacyBitAddress.DataType, failures, "Legacy bit default data type");
-
-            var legacyRegisterAddress = PlcTypedAddressParser.ParseRequired("D1", new MappingEntry(ModbusType.HoldingRegister, 1));
-            AssertEqual("D1", legacyRegisterAddress.BaseAddress, failures, "Legacy register base address");
-            AssertEqual("S", legacyRegisterAddress.DataType, failures, "Legacy register default data type");
-
-            if (TryParseTypedAddress(new MappingEntry(ModbusType.Coil, 2) { PlcAddress = "M2:U" }))
+            if (TryParseTypedAddress(new MappingEntry(ModbusType.Coil, 2) { PlcAddress = "M2:BIT" }))
             {
-                failures.Add("Bool PLC address with non-BIT data type was accepted.");
+                failures.Add("Bool PLC address with suffix was accepted.");
+            }
+
+            if (TryParseTypedAddress(new MappingEntry(ModbusType.HoldingRegister, 3) { PlcAddress = "D3:U" }))
+            {
+                failures.Add("Register PLC address with suffix was accepted.");
             }
         }
         catch (Exception ex)
