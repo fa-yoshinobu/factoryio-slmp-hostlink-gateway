@@ -16,7 +16,6 @@ public enum PlcOperationMode
 
 public sealed class PlcClientService : IAsyncDisposable
 {
-    private const int MaxBlockPoints = 64;
     private QueuedSlmpClient? _slmp;
     private QueuedKvHostLinkClient? _hostLink;
 
@@ -392,48 +391,7 @@ public sealed class PlcClientService : IAsyncDisposable
     }
 
     private (List<PlcAccessBlock> Blocks, List<MappingEntry> Singles) BuildBlocks(IEnumerable<MappingEntry> entries)
-    {
-        var points = new List<PlcAccessPoint>();
-        var singles = new List<MappingEntry>();
-
-        foreach (var entry in entries)
-        {
-            if (string.IsNullOrWhiteSpace(entry.PlcAddress))
-            {
-                singles.Add(entry);
-                continue;
-            }
-
-            if (TryCreateAccessPoint(entry, out var point))
-            {
-                points.Add(point);
-            }
-            else
-            {
-                singles.Add(entry);
-            }
-        }
-
-        var blocks = new List<PlcAccessBlock>();
-        PlcAccessBlock? current = null;
-
-        foreach (var point in points
-            .OrderBy(x => x.IsRegister)
-            .ThenBy(x => x.DeviceKey, StringComparer.Ordinal)
-            .ThenBy(x => x.Number))
-        {
-            if (current is null || !current.CanAdd(point))
-            {
-                current = new PlcAccessBlock(point);
-                blocks.Add(current);
-                continue;
-            }
-
-            current.Add(point);
-        }
-
-        return (blocks, singles);
-    }
+        => PlcAccessBlockPlanner.BuildBlocks(entries, TryCreateAccessPoint);
 
     private bool TryCreateAccessPoint(MappingEntry entry, out PlcAccessPoint point)
     {
@@ -545,62 +503,4 @@ public sealed class PlcClientService : IAsyncDisposable
         return null;
     }
 
-    private sealed record PlcAccessPoint(
-        MappingEntry Entry,
-        bool IsRegister,
-        string DeviceKey,
-        uint Number,
-        string AddressText,
-        SlmpDeviceAddress? SlmpAddress);
-
-    private sealed class PlcAccessBlock
-    {
-        public PlcAccessBlock(PlcAccessPoint firstPoint)
-        {
-            IsRegister = firstPoint.IsRegister;
-            DeviceKey = firstPoint.DeviceKey;
-            StartNumber = firstPoint.Number;
-            EndNumber = firstPoint.Number;
-            StartAddressText = firstPoint.AddressText;
-            StartSlmpAddress = firstPoint.SlmpAddress;
-            Points.Add(firstPoint);
-        }
-
-        public bool IsRegister { get; }
-
-        public string DeviceKey { get; }
-
-        public uint StartNumber { get; }
-
-        public uint EndNumber { get; private set; }
-
-        public string StartAddressText { get; }
-
-        public SlmpDeviceAddress? StartSlmpAddress { get; }
-
-        public List<PlcAccessPoint> Points { get; } = [];
-
-        public int Count => checked((int)(EndNumber - StartNumber + 1));
-
-        public bool CanAdd(PlcAccessPoint point)
-        {
-            if (point.IsRegister != IsRegister || point.DeviceKey != DeviceKey)
-            {
-                return false;
-            }
-
-            var isSameOrNext = point.Number <= EndNumber
-                || (EndNumber < uint.MaxValue && point.Number == EndNumber + 1);
-            return isSameOrNext && Count < MaxBlockPoints;
-        }
-
-        public void Add(PlcAccessPoint point)
-        {
-            Points.Add(point);
-            if (point.Number > EndNumber)
-            {
-                EndNumber = point.Number;
-            }
-        }
-    }
 }

@@ -54,8 +54,11 @@ jobs:
       - name: Build
         run: dotnet build GatewayApp.sln -c Release
 
+      - name: Unit tests
+        run: dotnet test GatewayApp.sln -c Release --no-build
+
       - name: Smoke tests
-        run: dotnet run --project GatewayApp.SmokeTests/GatewayApp.SmokeTests.csproj -c Release
+        run: dotnet run --project GatewayApp.SmokeTests/GatewayApp.SmokeTests.csproj -c Release --no-build
 
       - name: Publish single-file executable
         shell: pwsh
