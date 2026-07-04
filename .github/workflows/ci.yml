@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test-smoke:
+    name: Build, test, and smoke
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Build
+        run: dotnet build GatewayApp.sln -c Release
+
+      - name: Unit tests
+        run: dotnet test GatewayApp.sln -c Release --no-build
+
+      - name: Smoke tests
+        run: dotnet run --project GatewayApp.SmokeTests/GatewayApp.SmokeTests.csproj -c Release --no-build
