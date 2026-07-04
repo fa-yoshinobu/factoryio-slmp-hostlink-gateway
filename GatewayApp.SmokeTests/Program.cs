@@ -53,6 +53,7 @@ internal static class Program
                 SmokePlcProfileOptions(failures);
                 SmokeStrictSettingsJson(failures);
                 SmokePlcSimulatorOption(failures);
+                SmokePlcAutoReconnectOption(failures);
                 SmokePlcConnectionFailureMessage(failures);
                 SmokeBulkAssignDeviceOptions(failures);
                 SmokePlcAddressSequence(failures);
@@ -926,6 +927,72 @@ internal static class Program
             || portTextBox.Text != expectedPort.ToString(CultureInfo.InvariantCulture))
         {
             failures.Add($"{label}: port editor was not preserved and disabled.");
+        }
+    }
+
+    private static void SmokePlcAutoReconnectOption(List<string> failures)
+    {
+        PlcSettingsWindow? settingsWindow = null;
+        try
+        {
+            var editableSettings = new PlcSettings
+            {
+                AutoReconnect = true,
+            }.Normalize();
+
+            settingsWindow = new PlcSettingsWindow(editableSettings, isRunning: false);
+            settingsWindow.Show();
+            settingsWindow.UpdateLayout();
+            PumpDispatcher();
+
+            if (settingsWindow.FindName("AutoReconnectCheckBox") is not CheckBox editableCheck)
+            {
+                failures.Add("PLC auto reconnect checkbox was not found.");
+                return;
+            }
+
+            if (editableCheck.IsChecked != true)
+            {
+                failures.Add("PLC auto reconnect checkbox was not enabled by default.");
+            }
+
+            editableCheck.IsChecked = false;
+            PumpDispatcher();
+            if (editableSettings.AutoReconnect)
+            {
+                failures.Add("PLC auto reconnect checkbox did not update settings.");
+            }
+
+            settingsWindow.Close();
+
+            var readOnlySettings = new PlcSettings
+            {
+                AutoReconnect = true,
+            }.Normalize();
+
+            settingsWindow = new PlcSettingsWindow(readOnlySettings, isRunning: true);
+            settingsWindow.Show();
+            settingsWindow.UpdateLayout();
+            PumpDispatcher();
+
+            if (settingsWindow.FindName("AutoReconnectCheckBox") is not CheckBox readOnlyCheck)
+            {
+                failures.Add("Read-only PLC auto reconnect checkbox was not found.");
+                return;
+            }
+
+            if (readOnlyCheck.IsEnabled)
+            {
+                failures.Add("PLC auto reconnect checkbox was editable while running.");
+            }
+        }
+        catch (Exception ex)
+        {
+            failures.Add($"PLC auto reconnect option smoke failed: {ex.GetType().Name}: {ex.Message}");
+        }
+        finally
+        {
+            settingsWindow?.Close();
         }
     }
 

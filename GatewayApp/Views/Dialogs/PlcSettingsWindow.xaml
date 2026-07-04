@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="{DynamicResource PlcSettingsTitle}"
         Width="420"
-        Height="420"
+        Height="450"
         WindowStartupLocation="CenterOwner">
     <DockPanel Background="#ebebeb">
         <TextBlock x:Name="WarningText"
@@ -20,6 +20,7 @@
         </StackPanel>
         <Grid x:Name="FormGrid" Margin="18,14">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -83,6 +84,13 @@
                       Checked="SimulatorCheckBox_Changed"
                       Unchecked="SimulatorCheckBox_Changed"
                       Visibility="Collapsed" />
+
+            <CheckBox x:Name="AutoReconnectCheckBox"
+                      Grid.Row="8"
+                      Grid.Column="1"
+                      Margin="0,10,0,0"
+                      Content="{DynamicResource AutoReconnect}"
+                      IsChecked="{Binding AutoReconnect, UpdateSourceTrigger=PropertyChanged}" />
         </Grid>
     </DockPanel>
 </Window>

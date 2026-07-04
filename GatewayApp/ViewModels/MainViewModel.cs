@@ -14,17 +14,24 @@ namespace GatewayApp.ViewModels;
 public partial class MainViewModel : ObservableObject, IAsyncDisposable
 {
     private static readonly TimeSpan PlcModeRefreshInterval = TimeSpan.FromMilliseconds(500);
+    private static readonly TimeSpan PlcReconnectInitialDelay = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan PlcReconnectMaxDelay = TimeSpan.FromSeconds(30);
     private readonly SettingsService _settingsService = new();
-    private readonly GatewayService _gatewayService = new();
+    private readonly IGatewayService _gatewayService;
     private readonly LogFileService _logFileService = new();
-    private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
+    private readonly Dispatcher _dispatcher;
     private readonly DispatcherTimer _pollTimer;
+    private readonly Func<DateTime> _utcNow;
     private DateTime _nextPlcModeRefreshUtc = DateTime.MinValue;
     private PlcOperationMode? _plcMode;
     private bool _pollInFlight;
     private bool _suppressDirty;
     private bool _gatewayLogFailureReported;
     private bool _plcModeReadFailureReported;
+    private bool _plcReconnectActive;
+    private int _plcReconnectAttempt;
+    private TimeSpan _plcReconnectDelay = PlcReconnectInitialDelay;
+    private DateTime _nextPlcReconnectUtc = DateTime.MinValue;
 
     [ObservableProperty]
     private PlcSettings _plc = new();
@@ -63,11 +70,23 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     private bool _isDirty;
 
     public MainViewModel()
+        : this(new GatewayService(), Dispatcher.CurrentDispatcher, null, startPollTimer: true)
     {
+    }
+
+    internal MainViewModel(
+        IGatewayService gatewayService,
+        Dispatcher dispatcher,
+        Func<DateTime>? utcNow,
+        bool startPollTimer)
+    {
+        _gatewayService = gatewayService;
+        _dispatcher = dispatcher;
+        _utcNow = utcNow ?? (() => DateTime.UtcNow);
         _gatewayService.WarningReported += ReportError;
         _gatewayService.TraceReported += ReportLog;
         Mappings.CollectionChanged += OnMappingsChanged;
-        _pollTimer = new DispatcherTimer
+        _pollTimer = new DispatcherTimer(DispatcherPriority.Normal, _dispatcher)
         {
             Interval = TimeSpan.FromMilliseconds(Math.Max(10, Plc.PollingMs)),
         };
@@ -76,7 +95,10 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         ApplySettings(null);
         Loc.LanguageChanged += OnLanguageChanged;
         RefreshLocalizedText();
-        _pollTimer.Start();
+        if (startPollTimer)
+        {
+            _pollTimer.Start();
+        }
     }
 
     public ObservableCollection<MappingEntry> Mappings { get; } = [];
@@ -142,6 +164,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         {
             await _gatewayService.StartAsync(Plc, Modbus).ConfigureAwait(true);
             IsRunning = true;
+            ResetPlcReconnectState();
             GatewayStatus = Loc.Text("GatewayRunning");
             RefreshModbusStatus();
             PlcStatus = Loc.Text("PlcConnected");
@@ -154,6 +177,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         catch (Exception ex)
         {
             IsRunning = false;
+            ResetPlcReconnectState();
             GatewayStatus = Loc.Text("GatewayStopped");
             ModbusStatus = Loc.Text("ModbusTcpStopped");
             PlcStatus = Loc.Text("PlcDisconnected");
@@ -462,8 +486,12 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         {
             GatewayStatus = Loc.Text("GatewayRunning");
             RefreshModbusStatus();
-            PlcStatus = Loc.Text("PlcConnected");
-            PlcModeStatus = FormatPlcModeStatus(_plcMode);
+            PlcStatus = _plcReconnectActive
+                ? FormatPlcReconnectStatus()
+                : Loc.Text("PlcConnected");
+            PlcModeStatus = _plcReconnectActive
+                ? FormatPlcModeStatus(null)
+                : FormatPlcModeStatus(_plcMode);
         }
         else
         {
@@ -520,6 +548,11 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     private async void PollTimerOnTick(object? sender, EventArgs e)
     {
+        await PollOnceAsync().ConfigureAwait(true);
+    }
+
+    internal async Task PollOnceAsync()
+    {
         OnPropertyChanged(nameof(ModbusClientText));
         OnPropertyChanged(nameof(ModbusCycleText));
         OnPropertyChanged(nameof(PlcCycleText));
@@ -532,6 +565,12 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         _pollInFlight = true;
         try
         {
+            if (_plcReconnectActive)
+            {
+                await TryReconnectPlcAsync().ConfigureAwait(true);
+                return;
+            }
+
             await _gatewayService.PollPlcAsync(Mappings).ConfigureAwait(true);
             await RefreshPlcModeStatusAsync().ConfigureAwait(true);
             OnPropertyChanged(nameof(PlcCycleText));
@@ -539,6 +578,10 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         }
         catch (Exception ex) when (!IsRunning && CommunicationExceptionClassifier.IsExpectedLocalStop(ex))
         {
+        }
+        catch (Exception ex) when (IsRunning && Plc.AutoReconnect)
+        {
+            await EnterPlcReconnectAsync(ex).ConfigureAwait(true);
         }
         catch (Exception ex)
         {
@@ -554,6 +597,7 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
     private async Task StopAsync(string gatewayStatus)
     {
         IsRunning = false;
+        ResetPlcReconnectState();
         GatewayStatus = gatewayStatus;
         ModbusStatus = Loc.Text("ModbusTcpStopping");
         PlcStatus = Loc.Text("PlcDisconnecting");
@@ -591,11 +635,103 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
         catch (Exception ex) when (!IsRunning && CommunicationExceptionClassifier.IsExpectedLocalStop(ex))
         {
         }
+        catch (Exception ex) when (IsRunning && _plcReconnectActive)
+        {
+            ReportLog(Loc.Format("ForcePlcWriteSkippedReconnecting", entry.ModbusLabel, entry.DisplayValue));
+            StatusMessage = ex.Message;
+        }
         catch (Exception ex)
         {
             ReportError(ex.Message);
             await StopAsync(Loc.Text("GatewayStoppedByError")).ConfigureAwait(true);
         }
+    }
+
+    private async Task EnterPlcReconnectAsync(Exception exception)
+    {
+        if (!_plcReconnectActive)
+        {
+            _plcReconnectActive = true;
+            _plcReconnectAttempt = 0;
+            _plcReconnectDelay = PlcReconnectInitialDelay;
+            ReportLog(Loc.Format("PlcReconnectLost", exception.Message));
+            ReportLog(Loc.Text("PlcReconnectStarted"));
+        }
+
+        ResetPlcModeStatus();
+        try
+        {
+            await _gatewayService.DisconnectPlcAfterFaultAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex) when (!IsRunning && CommunicationExceptionClassifier.IsExpectedLocalStop(ex))
+        {
+        }
+        catch (Exception ex)
+        {
+            ReportLog(ex.Message);
+        }
+
+        ScheduleNextPlcReconnect(_utcNow());
+        GatewayStatus = Loc.Text("GatewayRunning");
+        RefreshModbusStatus();
+        OnPropertyChanged(nameof(PlcCycleText));
+    }
+
+    private async Task TryReconnectPlcAsync()
+    {
+        if (!IsRunning || !_plcReconnectActive)
+        {
+            return;
+        }
+
+        PlcStatus = FormatPlcReconnectStatus();
+        ResetPlcModeStatus();
+        if (_utcNow() < _nextPlcReconnectUtc)
+        {
+            return;
+        }
+
+        try
+        {
+            await _gatewayService.ReconnectPlcAsync(Plc).ConfigureAwait(true);
+            ResetPlcReconnectState();
+            PlcStatus = Loc.Text("PlcConnected");
+            ResetPlcModeStatus();
+            await RefreshPlcModeStatusAsync(force: true).ConfigureAwait(true);
+            ReportLog(Loc.Text("PlcReconnectRecovered"));
+            ClearStatus();
+            OnPropertyChanged(nameof(PlcCycleText));
+        }
+        catch (OperationCanceledException) when (!IsRunning)
+        {
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.Message;
+            ScheduleNextPlcReconnect(_utcNow());
+        }
+    }
+
+    private void ScheduleNextPlcReconnect(DateTime nowUtc)
+    {
+        _plcReconnectAttempt++;
+        _nextPlcReconnectUtc = nowUtc.Add(_plcReconnectDelay);
+        _plcReconnectDelay = TimeSpan.FromSeconds(
+            Math.Min(_plcReconnectDelay.TotalSeconds * 2, PlcReconnectMaxDelay.TotalSeconds));
+        PlcStatus = FormatPlcReconnectStatus();
+    }
+
+    private string FormatPlcReconnectStatus()
+    {
+        return Loc.Format("PlcReconnecting", Math.Max(1, _plcReconnectAttempt));
+    }
+
+    private void ResetPlcReconnectState()
+    {
+        _plcReconnectActive = false;
+        _plcReconnectAttempt = 0;
+        _plcReconnectDelay = PlcReconnectInitialDelay;
+        _nextPlcReconnectUtc = DateTime.MinValue;
     }
 
     private void SetStatus(string message)
@@ -629,7 +765,14 @@ public partial class MainViewModel : ObservableObject, IAsyncDisposable
             return;
         }
 
-        var now = DateTime.UtcNow;
+        if (_plcReconnectActive)
+        {
+            _plcMode = null;
+            PlcModeStatus = FormatPlcModeStatus(_plcMode);
+            return;
+        }
+
+        var now = _utcNow();
         if (!force && now < _nextPlcModeRefreshUtc)
         {
             return;

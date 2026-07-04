@@ -103,6 +103,8 @@ public sealed class PlcSettings
     [JsonRequired]
     public bool UseSimulator { get; set; }
 
+    public bool AutoReconnect { get; set; } = true;
+
     public PlcSettings Clone()
     {
         var clone = new PlcSettings
@@ -116,6 +118,7 @@ public sealed class PlcSettings
             SlmpProfile = NormalizeSlmpProfile(SlmpProfile),
             HostLinkProfile = NormalizeHostLinkProfile(HostLinkProfile),
             UseSimulator = UseSimulator,
+            AutoReconnect = AutoReconnect,
         }.Normalize();
 
         return clone;
