@@ -52,6 +52,7 @@ internal static class Program
                 SmokeScaledRawFormatting(failures);
                 SmokePlcProfileOptions(failures);
                 SmokeStrictSettingsJson(failures);
+                SmokeAtomicSettingsSave(failures);
                 SmokePlcSimulatorOption(failures);
                 SmokePlcConnectionFailureMessage(failures);
                 SmokeBulkAssignDeviceOptions(failures);
@@ -749,6 +750,91 @@ internal static class Program
         }
         catch (JsonException)
         {
+        }
+    }
+
+    private static void SmokeAtomicSettingsSave(List<string> failures)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"factoryio-gateway-settings-{Guid.NewGuid():N}");
+        var path = Path.Combine(directory, "settings.json");
+
+        try
+        {
+            Directory.CreateDirectory(directory);
+            var service = new SettingsService();
+            var settings = new AppSettings
+            {
+                RealScale = 123,
+                Plc = new PlcSettings { Host = "127.0.0.1", UseSimulator = true },
+                Modbus = new ModbusSettings { Port = 1502 },
+                Mappings =
+                [
+                    new MappingEntrySettings
+                    {
+                        ModbusType = ModbusType.HoldingRegister,
+                        ModbusAddress = 1,
+                        PlcAddress = "D100",
+                        DisplayType = DisplayType.Int16,
+                        Comment = "saved",
+                    },
+                ],
+            };
+
+            service.Save(path, settings);
+            var loaded = service.Load(path);
+            AssertEqual("123", loaded.RealScale.ToString(CultureInfo.InvariantCulture), failures, "Atomic settings save roundtrip scale");
+            AssertEqual("saved", loaded.Mappings.Single().Comment, failures, "Atomic settings save roundtrip mapping");
+            AssertNoSettingsTempFiles(directory, failures, "successful save");
+
+            const string oldContent = "existing settings";
+            File.WriteAllText(path, oldContent);
+            File.SetAttributes(path, FileAttributes.ReadOnly);
+
+            try
+            {
+                service.Save(path, settings);
+                failures.Add("Atomic settings save unexpectedly overwrote a read-only file.");
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+            catch (IOException)
+            {
+            }
+            finally
+            {
+                File.SetAttributes(path, FileAttributes.Normal);
+            }
+
+            AssertEqual(oldContent, File.ReadAllText(path), failures, "Atomic settings save preserved read-only file");
+            AssertNoSettingsTempFiles(directory, failures, "failed save");
+        }
+        catch (Exception ex)
+        {
+            failures.Add($"Atomic settings save smoke failed: {ex.GetType().Name}: {ex.Message}");
+        }
+        finally
+        {
+            if (File.Exists(path))
+            {
+                File.SetAttributes(path, FileAttributes.Normal);
+            }
+
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
+    private static void AssertNoSettingsTempFiles(string directory, List<string> failures, string phase)
+    {
+        var tempFiles = Directory.Exists(directory)
+            ? Directory.GetFiles(directory, "settings.json.*.tmp")
+            : [];
+        if (tempFiles.Length > 0)
+        {
+            failures.Add($"Atomic settings save left temp files after {phase}: {string.Join(", ", tempFiles.Select(Path.GetFileName))}");
         }
     }
 

@@ -36,13 +36,36 @@ public sealed class SettingsService
             throw new ArgumentException(Loc.Text("SettingsPathEmpty"), nameof(path));
         }
 
-        var directory = Path.GetDirectoryName(path);
-        if (!string.IsNullOrWhiteSpace(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
+        var fullPath = Path.GetFullPath(path);
+        var directory = Path.GetDirectoryName(fullPath) ?? Environment.CurrentDirectory;
+        Directory.CreateDirectory(directory);
 
         var json = JsonSerializer.Serialize(settings, _jsonOptions);
-        File.WriteAllText(path, json);
+        var tempPath = Path.Combine(directory, $"{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
+
+        try
+        {
+            File.WriteAllText(tempPath, json);
+            File.Move(tempPath, fullPath, overwrite: true);
+        }
+        catch
+        {
+            TryDeleteFile(tempPath);
+            throw;
+        }
+    }
+
+    private static void TryDeleteFile(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
     }
 }
