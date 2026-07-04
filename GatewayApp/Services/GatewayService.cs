@@ -3,7 +3,38 @@ using System.Diagnostics;
 
 namespace GatewayApp.Services;
 
-public sealed class GatewayService : IAsyncDisposable
+internal interface IGatewayService : IAsyncDisposable
+{
+    event Action<string>? WarningReported;
+
+    event Action<string>? TraceReported;
+
+    int ModbusClientCount { get; }
+
+    double? ModbusRequestCycleMilliseconds { get; }
+
+    double? PlcPollCycleMilliseconds { get; }
+
+    Task StartAsync(PlcSettings plcSettings, ModbusSettings modbusSettings);
+
+    Task StopAsync();
+
+    int ReadModbusRaw(MappingEntry entry);
+
+    void WriteModbusRaw(MappingEntry entry, int rawValue);
+
+    Task DisconnectPlcAfterFaultAsync();
+
+    Task ReconnectPlcAsync(PlcSettings settings, CancellationToken cancellationToken = default);
+
+    Task<PlcOperationMode> ReadPlcOperationModeAsync(CancellationToken cancellationToken = default);
+
+    Task PollPlcAsync(IEnumerable<MappingEntry> mappings, CancellationToken cancellationToken = default);
+
+    Task ForceWriteAsync(MappingEntry entry, CancellationToken cancellationToken = default);
+}
+
+public sealed class GatewayService : IGatewayService
 {
     private readonly ModbusSlaveService _modbus = new();
     private readonly PlcClientService _plc = new();
@@ -84,6 +115,47 @@ public sealed class GatewayService : IAsyncDisposable
     public int ReadModbusRaw(MappingEntry entry) => _modbus.ReadRaw(entry);
 
     public void WriteModbusRaw(MappingEntry entry, int rawValue) => _modbus.WriteRaw(entry, rawValue);
+
+    public async Task DisconnectPlcAfterFaultAsync()
+    {
+        await _operationGate.WaitAsync();
+        try
+        {
+            if (_runCts is null)
+            {
+                return;
+            }
+
+            await DisconnectPlcUnlockedAsync().ConfigureAwait(false);
+            ClearToPlcWriteSnapshots();
+            ResetPlcCycleStats();
+        }
+        finally
+        {
+            _operationGate.Release();
+        }
+    }
+
+    public async Task ReconnectPlcAsync(PlcSettings settings, CancellationToken cancellationToken = default)
+    {
+        await _operationGate.WaitAsync(cancellationToken);
+        try
+        {
+            ThrowIfDisposed();
+            var runToken = GetRunToken(cancellationToken);
+            if (_plc.IsConnected)
+            {
+                return;
+            }
+
+            await _plc.ConnectAsync(settings, runToken).ConfigureAwait(false);
+            ResetPlcCycleStats();
+        }
+        finally
+        {
+            _operationGate.Release();
+        }
+    }
 
     public async Task<PlcOperationMode> ReadPlcOperationModeAsync(CancellationToken cancellationToken = default)
     {
@@ -262,7 +334,7 @@ public sealed class GatewayService : IAsyncDisposable
         _modbus.Stop();
         try
         {
-            await _plc.DisconnectAsync();
+            await DisconnectPlcUnlockedAsync();
         }
         catch (Exception ex) when (CommunicationExceptionClassifier.IsExpectedLocalStop(ex))
         {
@@ -272,6 +344,17 @@ public sealed class GatewayService : IAsyncDisposable
         _runCts = null;
         ResetPlcCycleStats();
         ClearToPlcWriteSnapshots();
+    }
+
+    private async Task DisconnectPlcUnlockedAsync()
+    {
+        try
+        {
+            await _plc.DisconnectAsync();
+        }
+        catch (Exception ex) when (CommunicationExceptionClassifier.IsExpectedLocalStop(ex))
+        {
+        }
     }
 
     private async Task StopAfterFailedStartAsync()

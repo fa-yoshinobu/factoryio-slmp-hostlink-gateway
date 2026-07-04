@@ -22,6 +22,9 @@ internal static class DialogReadOnlyHelper
                 case RadioButton radioButton when disableSelectors:
                     radioButton.IsEnabled = false;
                     break;
+                case CheckBox checkBox when disableSelectors:
+                    checkBox.IsEnabled = false;
+                    break;
             }
 
             SetReadOnly(child, disableSelectors);

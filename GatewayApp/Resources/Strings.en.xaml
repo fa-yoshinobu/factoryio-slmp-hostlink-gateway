@@ -46,6 +46,7 @@
     <sys:String x:Key="TimeoutSec">Timeout (sec)</sys:String>
     <sys:String x:Key="PollingMs">Polling (ms)</sys:String>
     <sys:String x:Key="Machine">Model</sys:String>
+    <sys:String x:Key="AutoReconnect">Auto reconnect PLC</sys:String>
     <sys:String x:Key="ListenIp">Listen IP</sys:String>
     <sys:String x:Key="UnitId">Unit ID</sys:String>
     <sys:String x:Key="MaxAddressCoil">Coil Max Address</sys:String>
@@ -79,6 +80,7 @@
     <sys:String x:Key="PlcDisconnected">PLC disconnected</sys:String>
     <sys:String x:Key="PlcDisconnecting">PLC disconnecting</sys:String>
     <sys:String x:Key="PlcConnected">PLC connected</sys:String>
+    <sys:String x:Key="PlcReconnecting">PLC reconnecting ({0})</sys:String>
     <sys:String x:Key="PlcModeUnavailable">PLC Mode: --</sys:String>
     <sys:String x:Key="PlcModeRun">PLC Mode: RUN</sys:String>
     <sys:String x:Key="PlcModeStop">PLC Mode: STOP</sys:String>
@@ -132,6 +134,10 @@
     <sys:String x:Key="InvalidPlcTransport">Invalid PLC transport: {0}</sys:String>
     <sys:String x:Key="PlcConnectionFailed">PLC connection failed ({0} {1} {2}:{3}, model={4}, timeout={5} sec). {6}</sys:String>
     <sys:String x:Key="PlcModeReadFailed">PLC mode read failed: {0}</sys:String>
+    <sys:String x:Key="PlcReconnectLost">PLC connection lost: {0}</sys:String>
+    <sys:String x:Key="PlcReconnectStarted">PLC reconnecting started.</sys:String>
+    <sys:String x:Key="PlcReconnectRecovered">PLC reconnected.</sys:String>
+    <sys:String x:Key="ForcePlcWriteSkippedReconnecting">FORCE PLC write skipped while PLC reconnects: {0} -> {1}</sys:String>
     <sys:String x:Key="ResponseTimeout">Response wait was canceled or timed out.</sys:String>
     <sys:String x:Key="PlcMismatch">{0} -> {1} PLC value mismatch. Sent={2} / PLC={3}</sys:String>
     <sys:String x:Key="ModbusTcpStartFailed">Modbus TCP failed to start.</sys:String>

@@ -110,6 +110,19 @@ Verified environment:
 
 - KV STUDIO Ver.12.41
 
+## PLC Auto Reconnect
+
+PLC communication settings include `Auto reconnect PLC`, which is enabled by default.
+
+When the PLC connection is lost while the gateway is running:
+
+- The Modbus TCP server keeps listening so Factory I/O can stay connected.
+- The PLC status changes to reconnecting and the gateway retries with backoff from 1 second up to 30 seconds.
+- Coil / HR write snapshots are cleared when the PLC connection is lost, so current Factory I/O values are written again after reconnect.
+- FORCE during reconnect updates the Modbus-side value and logs that the PLC write was skipped until reconnect.
+
+Disable `Auto reconnect PLC` if a PLC communication error should stop the whole gateway immediately.
+
 ## Mapping Notes
 
 Rows with an empty PLC address are not used for communication. Enter normal PLC device addresses such as `X4`, `Y0`, or `D0`; the gateway uses the row type and display type for interpretation.
