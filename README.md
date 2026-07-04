@@ -225,6 +225,8 @@ gateway.log
 error.log
 ```
 
+`gateway.log` and `error.log` rotate to `.1` when they exceed 10 MB so long-running sessions do not grow the files without bound.
+
 ## Troubleshooting
 
 Factory I/O cannot connect:

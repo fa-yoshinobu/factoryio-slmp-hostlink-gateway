@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added the `Auto reconnect PLC` setting. When enabled, PLC disconnects retry with 1-second exponential backoff up to 30 seconds while the Modbus TCP server stays running.
 - Added unit and smoke coverage for PLC auto reconnect settings compatibility and UI state.
+- Added a confirmation prompt before generating very large Modbus mapping ranges when any max address exceeds 4096.
+
+### Changed
+- Rotated `gateway.log` and `error.log` at 10 MB so long-running sessions do not grow log files without bound.
 
 ## [1.0.1] - 2026-06-29
 

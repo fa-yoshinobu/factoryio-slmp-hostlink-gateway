@@ -55,6 +55,11 @@ public partial class ModbusSettingsWindow : Window
             return;
         }
 
+        if (!ConfirmLargeAddressRange(maxCoilAddress, maxDiscreteInputAddress, maxHoldingRegisterAddress, maxInputRegisterAddress))
+        {
+            return;
+        }
+
         Settings.MaxCoilAddress = maxCoilAddress;
         Settings.MaxDiscreteInputAddress = maxDiscreteInputAddress;
         Settings.MaxHoldingRegisterAddress = maxHoldingRegisterAddress;
@@ -82,7 +87,7 @@ public partial class ModbusSettingsWindow : Window
             return false;
         }
 
-        if (parsed is < 0 or > 65535)
+        if (parsed is < 0 or > ModbusAddressLimitGuard.MaximumAddress)
         {
             MessageBox.Show(this, Loc.Format("AddressRange", label), Loc.Text("ModbusSettingsTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
@@ -92,4 +97,22 @@ public partial class ModbusSettingsWindow : Window
         return true;
     }
 
+    private bool ConfirmLargeAddressRange(params int?[] maxAddresses)
+    {
+        if (!ModbusAddressLimitGuard.RequiresLargeMappingConfirmation(maxAddresses))
+        {
+            return true;
+        }
+
+        var rowCount = ModbusAddressLimitGuard.CountGeneratedRows(maxAddresses);
+        var result = MessageBox.Show(
+            this,
+            Loc.Format("ConfirmLargeModbusAddressRange", ModbusAddressLimitGuard.PracticalAddressLimit, rowCount),
+            Loc.Text("ModbusSettingsTitle"),
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
+
+        return result == MessageBoxResult.Yes;
+    }
 }
