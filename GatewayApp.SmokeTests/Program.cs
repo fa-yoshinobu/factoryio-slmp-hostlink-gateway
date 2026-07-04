@@ -500,27 +500,34 @@ internal static class Program
             try
             {
                 Directory.CreateDirectory(tempDir);
-                var tempService = new LogFileService(tempDir);
+                var tempService = new LogFileService(tempDir, maxLogBytes: 64);
                 var tempGatewayLogPath = Path.Combine(tempDir, "gateway.log");
                 var tempErrorLogPath = Path.Combine(tempDir, "error.log");
+                var tempGatewayRotatedPath = $"{tempGatewayLogPath}.1";
+                var tempErrorRotatedPath = $"{tempErrorLogPath}.1";
 
-                File.WriteAllText(tempGatewayLogPath, new string('x', 1_000_001));
+                File.WriteAllText(tempGatewayLogPath, new string('x', 60));
                 tempService.WriteGatewayLog(new LogEntry("after-size-limit"));
-                var largeLogText = File.ReadAllText(tempGatewayLogPath);
-                if (largeLogText.Length == 0
-                    || largeLogText[0] != 'x'
-                    || !largeLogText.Contains("after-size-limit", StringComparison.Ordinal))
+                var currentLogText = File.ReadAllText(tempGatewayLogPath);
+                var rotatedLogText = File.Exists(tempGatewayRotatedPath) ? File.ReadAllText(tempGatewayRotatedPath) : string.Empty;
+                if (rotatedLogText.Length == 0
+                    || !currentLogText.Contains("after-size-limit", StringComparison.Ordinal)
+                    || !rotatedLogText.StartsWith('x'))
                 {
-                    failures.Add("gateway.log was truncated when it exceeded the old size limit.");
+                    failures.Add("gateway.log did not rotate when it exceeded the configured size limit.");
                 }
 
                 File.WriteAllText(tempGatewayLogPath, "old gateway");
                 File.WriteAllText(tempErrorLogPath, "old error");
+                File.WriteAllText(tempGatewayRotatedPath, "old gateway archive");
+                File.WriteAllText(tempErrorRotatedPath, "old error archive");
                 tempService.ClearAllLogs();
                 if (File.ReadAllText(tempGatewayLogPath).Length != 0
-                    || File.ReadAllText(tempErrorLogPath).Length != 0)
+                    || File.ReadAllText(tempErrorLogPath).Length != 0
+                    || File.Exists(tempGatewayRotatedPath)
+                    || File.Exists(tempErrorRotatedPath))
                 {
-                    failures.Add("Startup log clear did not empty both gateway.log and error.log.");
+                    failures.Add("Startup log clear did not empty current logs and delete rotated logs.");
                 }
             }
             finally

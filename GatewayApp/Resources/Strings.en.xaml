@@ -107,6 +107,7 @@
 
     <sys:String x:Key="SettingsLoadRunning">Settings cannot be loaded while running. Stop first.</sys:String>
     <sys:String x:Key="ConfirmDeleteOutOfRangeMappings">Reducing the max address will delete {0} out-of-range mappings. Continue?</sys:String>
+    <sys:String x:Key="ConfirmLargeModbusAddressRange">One or more Modbus max addresses exceed {0}. This can generate up to {1:N0} mapping rows and may take time. Continue?</sys:String>
     <sys:String x:Key="ConfirmExitUnsaved">There are unsaved changes. Exit without saving?</sys:String>
     <sys:String x:Key="SavePathMissing">No settings file path is selected. Use Save As first.</sys:String>
     <sys:String x:Key="SettingsSavedOverwrite">Settings overwritten: {0}</sys:String>

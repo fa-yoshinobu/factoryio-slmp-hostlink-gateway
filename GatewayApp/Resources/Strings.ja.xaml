@@ -107,6 +107,7 @@
 
     <sys:String x:Key="SettingsLoadRunning">稼働中は設定を読み込めません。停止してから読み込んでください。</sys:String>
     <sys:String x:Key="ConfirmDeleteOutOfRangeMappings">最大アドレスを小さくすると、範囲外のマッピング {0} 件が削除されます。続行しますか？</sys:String>
+    <sys:String x:Key="ConfirmLargeModbusAddressRange">Modbus 最大アドレスのいずれかが {0} を超えています。最大 {1:N0} 行のマッピングを生成するため時間がかかる可能性があります。続行しますか？</sys:String>
     <sys:String x:Key="ConfirmExitUnsaved">未保存の変更があります。保存せずに終了しますか？</sys:String>
     <sys:String x:Key="SavePathMissing">保存先の設定ファイルが未指定です。名前を付けて保存してください。</sys:String>
     <sys:String x:Key="SettingsSavedOverwrite">設定を上書き保存しました: {0}</sys:String>
