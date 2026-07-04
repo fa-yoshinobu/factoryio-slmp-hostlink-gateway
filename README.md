@@ -118,6 +118,7 @@ When the PLC connection is lost while the gateway is running:
 
 - The Modbus TCP server keeps listening so Factory I/O can stay connected.
 - The PLC status changes to reconnecting and the gateway retries with backoff from 1 second up to 30 seconds.
+- DI / IR values keep the last values read from the PLC while the PLC is disconnected.
 - Coil / HR write snapshots are cleared when the PLC connection is lost, so current Factory I/O values are written again after reconnect.
 - FORCE during reconnect updates the Modbus-side value and logs that the PLC write was skipped until reconnect.
 
