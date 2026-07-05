@@ -110,6 +110,7 @@ public sealed class PlcSettingsTests
         {
             var profile = SlmpPlcProfiles.Parse(option.Value);
             Assert.NotEqual(SlmpPlcProfile.Unspecified, profile);
+            Assert.Equal(SlmpPlcProfiles.GetDisplayName(profile), option.Label);
         }
     }
 
@@ -117,10 +118,10 @@ public sealed class PlcSettingsTests
     public void HostLink_profile_options_show_local_kv_model_families()
     {
         Assert.Equal(
-            "KV-7000 / KV-7300 / KV-7500",
+            "KEYENCE KV-7000",
             PlcSettings.FormatHostLinkProfile("keyence:kv-7000"));
         Assert.Equal(
-            "KV-X310 / KV-X500 / KV-X520 / KV-X530 / KV-X550 / XYM",
+            "KEYENCE KV-X500 (XYM)",
             PlcSettings.FormatHostLinkProfile("keyence:kv-x500-xym"));
     }
 
@@ -131,6 +132,7 @@ public sealed class PlcSettingsTests
         {
             var catalog = KvHostLinkDeviceRanges.DeviceRangeCatalogForPlcProfile(option.Value);
             Assert.Equal(option.Value, catalog.PlcProfile);
+            Assert.Equal(KvHostLinkDeviceRanges.GetDisplayName(option.Value), option.Label);
         }
     }
 }

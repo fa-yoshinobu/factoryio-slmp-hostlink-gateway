@@ -127,41 +127,47 @@ Disable `Auto reconnect PLC` if a PLC communication error should stop the whole 
 ## PLC Profile Selection
 
 For SLMP, choose the profile that matches the PLC CPU and Ethernet route.
+The selector shows canonical display names while saved settings store the
+canonical profile value.
 
 | UI label | Canonical profile |
 |---|---|
-| iQ-R | `melsec:iq-r` |
-| iQ-R / RJ71EN71 | `melsec:iq-r:rj71en71` |
-| iQ-F | `melsec:iq-f` |
-| iQ-L | `melsec:iq-l` |
-| MX-R | `melsec:mx-r` |
-| MX-F | `melsec:mx-f` |
-| LCPU | `melsec:lcpu` |
-| LCPU / LJ71E71-100 | `melsec:lcpu:lj71e71-100` |
-| QnU | `melsec:qnu` |
-| QnU / QJ71E71-100 | `melsec:qnu:qj71e71-100` |
-| QnUDV | `melsec:qnudv` |
-| QnUDV / QJ71E71-100 | `melsec:qnudv:qj71e71-100` |
-| QCPU / QJ71E71-100 | `melsec:qcpu:qj71e71-100` |
+| MELSEC iQ-R (built-in) | `melsec:iq-r` |
+| MELSEC iQ-R (RJ71EN71) | `melsec:iq-r:rj71en71` |
+| MELSEC iQ-F (built-in) | `melsec:iq-f` |
+| MELSEC iQ-L (built-in) | `melsec:iq-l` |
+| MELSEC MX-R (built-in) | `melsec:mx-r` |
+| MELSEC MX-F (built-in) | `melsec:mx-f` |
+| MELSEC-L (built-in) | `melsec:lcpu` |
+| MELSEC-L (LJ71E71-100) | `melsec:lcpu:lj71e71-100` |
+| MELSEC QnU (built-in) | `melsec:qnu` |
+| MELSEC QnU (QJ71E71-100) | `melsec:qnu:qj71e71-100` |
+| MELSEC QnUDV (built-in) | `melsec:qnudv` |
+| MELSEC QnUDV (QJ71E71-100) | `melsec:qnudv:qj71e71-100` |
+| MELSEC-Q (QJ71E71-100) | `melsec:qcpu:qj71e71-100` |
 
-`QCPU` is not a selectable standalone SLMP connection profile. Use `QCPU / QJ71E71-100` when connecting through a QJ71E71-100 Ethernet unit.
+`MELSEC-Q (base profile)` is not a selectable standalone SLMP connection
+profile. Use `MELSEC-Q (QJ71E71-100)` when connecting through a QJ71E71-100
+Ethernet unit.
 
 For KEYENCE Host Link, choose the profile family that matches the KV model and address notation.
+The selector shows canonical display names while saved settings store the
+canonical profile value.
 
 | UI label | Canonical profile |
 |---|---|
-| KV-Nano | `keyence:kv-nano` |
-| KV-Nano / XYM | `keyence:kv-nano-xym` |
-| KV-3000 | `keyence:kv-3000` |
-| KV-3000 / XYM | `keyence:kv-3000-xym` |
-| KV-5000 / KV-5500 | `keyence:kv-5000` |
-| KV-5000 / KV-5500 / XYM | `keyence:kv-5000-xym` |
-| KV-7000 / KV-7300 / KV-7500 | `keyence:kv-7000` |
-| KV-7000 / KV-7300 / KV-7500 / XYM | `keyence:kv-7000-xym` |
-| KV-8000 / KV-8000A | `keyence:kv-8000` |
-| KV-8000 / KV-8000A / XYM | `keyence:kv-8000-xym` |
-| KV-X310 / KV-X500 / KV-X520 / KV-X530 / KV-X550 | `keyence:kv-x500` |
-| KV-X310 / KV-X500 / KV-X520 / KV-X530 / KV-X550 / XYM | `keyence:kv-x500-xym` |
+| KEYENCE KV-NANO | `keyence:kv-nano` |
+| KEYENCE KV-NANO (XYM) | `keyence:kv-nano-xym` |
+| KEYENCE KV-3000 | `keyence:kv-3000` |
+| KEYENCE KV-3000 (XYM) | `keyence:kv-3000-xym` |
+| KEYENCE KV-5000 | `keyence:kv-5000` |
+| KEYENCE KV-5000 (XYM) | `keyence:kv-5000-xym` |
+| KEYENCE KV-7000 | `keyence:kv-7000` |
+| KEYENCE KV-7000 (XYM) | `keyence:kv-7000-xym` |
+| KEYENCE KV-8000 | `keyence:kv-8000` |
+| KEYENCE KV-8000 (XYM) | `keyence:kv-8000-xym` |
+| KEYENCE KV-X500 | `keyence:kv-x500` |
+| KEYENCE KV-X500 (XYM) | `keyence:kv-x500-xym` |
 
 ## Mapping Notes
 

@@ -644,7 +644,7 @@ internal static class Program
             }
 
             var selectedOption = profileCombo.SelectedItem as PlcProfileOption;
-            if (selectedOption?.Value != "keyence:kv-8000-xym" || selectedOption.Label != "KV-8000 / KV-8000A / XYM")
+            if (selectedOption?.Value != "keyence:kv-8000-xym" || selectedOption.Label != "KEYENCE KV-8000 (XYM)")
             {
                 failures.Add(
                     $"HostLink profile combo did not use human label with canonical value. Value={selectedOption?.Value}, Label={selectedOption?.Label}.");
@@ -673,7 +673,7 @@ internal static class Program
             }
 
             selectedOption = slmpProfileCombo.SelectedItem as PlcProfileOption;
-            if (selectedOption?.Value != "melsec:qcpu:qj71e71-100" || selectedOption.Label != "QCPU / QJ71E71-100")
+            if (selectedOption?.Value != "melsec:qcpu:qj71e71-100" || selectedOption.Label != "MELSEC-Q (QJ71E71-100)")
             {
                 failures.Add(
                     $"SLMP Ethernet unit profile combo did not use human label with canonical value. Value={selectedOption?.Value}, Label={selectedOption?.Label}.");
