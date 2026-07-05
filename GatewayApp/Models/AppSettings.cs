@@ -48,14 +48,18 @@ public sealed class PlcSettings
     private static readonly (string Value, string Label)[] SlmpProfileOptionsInternal =
     [
         ("melsec:iq-r", "iQ-R"),
+        ("melsec:iq-r:rj71en71", "iQ-R / RJ71EN71"),
         ("melsec:iq-f", "iQ-F"),
         ("melsec:iq-l", "iQ-L"),
         ("melsec:mx-r", "MX-R"),
         ("melsec:mx-f", "MX-F"),
-        ("melsec:qnudv", "QnUDV"),
-        ("melsec:qnu", "QnU"),
-        ("melsec:qcpu", "QCPU"),
         ("melsec:lcpu", "LCPU"),
+        ("melsec:lcpu:lj71e71-100", "LCPU / LJ71E71-100"),
+        ("melsec:qnu", "QnU"),
+        ("melsec:qnu:qj71e71-100", "QnU / QJ71E71-100"),
+        ("melsec:qnudv", "QnUDV"),
+        ("melsec:qnudv:qj71e71-100", "QnUDV / QJ71E71-100"),
+        ("melsec:qcpu:qj71e71-100", "QCPU / QJ71E71-100"),
     ];
     private static readonly (string Value, string Label)[] HostLinkProfileOptionsInternal =
     [
@@ -63,14 +67,14 @@ public sealed class PlcSettings
         ("keyence:kv-nano-xym", "KV-Nano / XYM"),
         ("keyence:kv-3000", "KV-3000"),
         ("keyence:kv-3000-xym", "KV-3000 / XYM"),
-        ("keyence:kv-5000", "KV-5000"),
-        ("keyence:kv-5000-xym", "KV-5000 / XYM"),
-        ("keyence:kv-7000", "KV-7000"),
-        ("keyence:kv-7000-xym", "KV-7000 / XYM"),
-        ("keyence:kv-8000", "KV-8000"),
-        ("keyence:kv-8000-xym", "KV-8000 / XYM"),
-        ("keyence:kv-x500", "KV-X500"),
-        ("keyence:kv-x500-xym", "KV-X500 / XYM"),
+        ("keyence:kv-5000", "KV-5000 / KV-5500"),
+        ("keyence:kv-5000-xym", "KV-5000 / KV-5500 / XYM"),
+        ("keyence:kv-7000", "KV-7000 / KV-7300 / KV-7500"),
+        ("keyence:kv-7000-xym", "KV-7000 / KV-7300 / KV-7500 / XYM"),
+        ("keyence:kv-8000", "KV-8000 / KV-8000A"),
+        ("keyence:kv-8000-xym", "KV-8000 / KV-8000A / XYM"),
+        ("keyence:kv-x500", "KV-X310 / KV-X500 / KV-X520 / KV-X530 / KV-X550"),
+        ("keyence:kv-x500-xym", "KV-X310 / KV-X500 / KV-X520 / KV-X530 / KV-X550 / XYM"),
     ];
     public static IReadOnlyList<(string Value, string Label)> SlmpProfileOptions => SlmpProfileOptionsInternal;
 

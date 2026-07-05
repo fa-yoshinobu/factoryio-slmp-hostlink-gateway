@@ -1,5 +1,7 @@
 using GatewayApp.Models;
 using GatewayApp.Services;
+using PlcComm.KvHostLink;
+using PlcComm.Slmp;
 using System.IO;
 
 namespace GatewayApp.Tests;
@@ -85,6 +87,50 @@ public sealed class PlcSettingsTests
         finally
         {
             File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void Slmp_profile_options_include_local_ethernet_unit_profiles()
+    {
+        var values = PlcSettings.SlmpProfileOptions.Select(option => option.Value).ToArray();
+
+        Assert.Contains("melsec:iq-r:rj71en71", values);
+        Assert.Contains("melsec:lcpu:lj71e71-100", values);
+        Assert.Contains("melsec:qnu:qj71e71-100", values);
+        Assert.Contains("melsec:qnudv:qj71e71-100", values);
+        Assert.Contains("melsec:qcpu:qj71e71-100", values);
+        Assert.DoesNotContain("melsec:qcpu", values);
+    }
+
+    [Fact]
+    public void Slmp_profile_options_are_accepted_by_local_slmp_library()
+    {
+        foreach (var option in PlcSettings.SlmpProfileOptions)
+        {
+            var profile = SlmpPlcProfiles.Parse(option.Value);
+            Assert.NotEqual(SlmpPlcProfile.Unspecified, profile);
+        }
+    }
+
+    [Fact]
+    public void HostLink_profile_options_show_local_kv_model_families()
+    {
+        Assert.Equal(
+            "KV-7000 / KV-7300 / KV-7500",
+            PlcSettings.FormatHostLinkProfile("keyence:kv-7000"));
+        Assert.Equal(
+            "KV-X310 / KV-X500 / KV-X520 / KV-X530 / KV-X550 / XYM",
+            PlcSettings.FormatHostLinkProfile("keyence:kv-x500-xym"));
+    }
+
+    [Fact]
+    public void HostLink_profile_options_are_accepted_by_local_kv_library()
+    {
+        foreach (var option in PlcSettings.HostLinkProfileOptions)
+        {
+            var catalog = KvHostLinkDeviceRanges.DeviceRangeCatalogForPlcProfile(option.Value);
+            Assert.Equal(option.Value, catalog.PlcProfile);
         }
     }
 }

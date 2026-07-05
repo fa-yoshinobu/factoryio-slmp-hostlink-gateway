@@ -104,7 +104,7 @@ For Host Link communication with KV STUDIO(Simulator), use the following connect
 
 Available models:
 
-- KV-X500 / KV-X500 XYM / KV-8000 / KV-8000 XYM only
+- KV-X310/X500/X520/X530/X550 profile family and KV-8000/KV-8000A profile family, with or without XYM notation
 
 Verified environment:
 
@@ -123,6 +123,45 @@ When the PLC connection is lost while the gateway is running:
 - FORCE during reconnect updates the Modbus-side value and logs that the PLC write was skipped until reconnect.
 
 Disable `Auto reconnect PLC` if a PLC communication error should stop the whole gateway immediately.
+
+## PLC Profile Selection
+
+For SLMP, choose the profile that matches the PLC CPU and Ethernet route.
+
+| UI label | Canonical profile |
+|---|---|
+| iQ-R | `melsec:iq-r` |
+| iQ-R / RJ71EN71 | `melsec:iq-r:rj71en71` |
+| iQ-F | `melsec:iq-f` |
+| iQ-L | `melsec:iq-l` |
+| MX-R | `melsec:mx-r` |
+| MX-F | `melsec:mx-f` |
+| LCPU | `melsec:lcpu` |
+| LCPU / LJ71E71-100 | `melsec:lcpu:lj71e71-100` |
+| QnU | `melsec:qnu` |
+| QnU / QJ71E71-100 | `melsec:qnu:qj71e71-100` |
+| QnUDV | `melsec:qnudv` |
+| QnUDV / QJ71E71-100 | `melsec:qnudv:qj71e71-100` |
+| QCPU / QJ71E71-100 | `melsec:qcpu:qj71e71-100` |
+
+`QCPU` is not a selectable standalone SLMP connection profile. Use `QCPU / QJ71E71-100` when connecting through a QJ71E71-100 Ethernet unit.
+
+For KEYENCE Host Link, choose the profile family that matches the KV model and address notation.
+
+| UI label | Canonical profile |
+|---|---|
+| KV-Nano | `keyence:kv-nano` |
+| KV-Nano / XYM | `keyence:kv-nano-xym` |
+| KV-3000 | `keyence:kv-3000` |
+| KV-3000 / XYM | `keyence:kv-3000-xym` |
+| KV-5000 / KV-5500 | `keyence:kv-5000` |
+| KV-5000 / KV-5500 / XYM | `keyence:kv-5000-xym` |
+| KV-7000 / KV-7300 / KV-7500 | `keyence:kv-7000` |
+| KV-7000 / KV-7300 / KV-7500 / XYM | `keyence:kv-7000-xym` |
+| KV-8000 / KV-8000A | `keyence:kv-8000` |
+| KV-8000 / KV-8000A / XYM | `keyence:kv-8000-xym` |
+| KV-X310 / KV-X500 / KV-X520 / KV-X530 / KV-X550 | `keyence:kv-x500` |
+| KV-X310 / KV-X500 / KV-X520 / KV-X530 / KV-X550 / XYM | `keyence:kv-x500-xym` |
 
 ## Mapping Notes
 
@@ -262,8 +301,8 @@ Float display is different from the expected value:
 | CommunityToolkit.Mvvm | 8.4.2 | ObservableObject and RelayCommand support |
 | CsvHelper | 33.1.0 | Factory I/O tag CSV parsing |
 | NModbus | 3.0.83 | Modbus TCP slave/server |
-| PlcComm.Slmp | 1.1.1 | MELSEC SLMP PLC read/write |
-| PlcComm.KvHostLink | 1.1.1 | KEYENCE Host Link PLC read/write |
+| PlcComm.Slmp | local source, 1.1.1 | MELSEC SLMP PLC read/write |
+| PlcComm.KvHostLink | local source, 1.1.1 | KEYENCE Host Link PLC read/write |
 
 ## License
 
