@@ -307,8 +307,8 @@ Float display is different from the expected value:
 | CommunityToolkit.Mvvm | 8.4.2 | ObservableObject and RelayCommand support |
 | CsvHelper | 33.1.0 | Factory I/O tag CSV parsing |
 | NModbus | 3.0.83 | Modbus TCP slave/server |
-| PlcComm.Slmp | local source, 1.1.1 | MELSEC SLMP PLC read/write |
-| PlcComm.KvHostLink | local source, 1.1.1 | KEYENCE Host Link PLC read/write |
+| PlcComm.Slmp | 1.2.0 | MELSEC SLMP PLC read/write |
+| PlcComm.KvHostLink | 1.2.0 | KEYENCE Host Link PLC read/write |
 
 ## License
 

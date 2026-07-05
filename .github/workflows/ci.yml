@@ -18,18 +18,6 @@ jobs:
         with:
           path: factoryio-slmp-hostlink-gateway
 
-      - name: Checkout PlcComm.Slmp
-        uses: actions/checkout@v4
-        with:
-          repository: fa-yoshinobu/plc-comm-slmp-dotnet
-          path: plc-comm-slmp-dotnet
-
-      - name: Checkout PlcComm.KvHostLink
-        uses: actions/checkout@v4
-        with:
-          repository: fa-yoshinobu/plc-comm-hostlink-dotnet
-          path: plc-comm-hostlink-dotnet
-
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
