@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- Updated PLC communication package references to `PlcComm.Slmp` and `PlcComm.KvHostLink` `2.0.0` (canonical module I/O vocabulary release). The gateway always targets the own station (default SLMP target address), so no configuration change is required.
+
 ## [1.0.2] - 2026-07-05
 
 ### Added
