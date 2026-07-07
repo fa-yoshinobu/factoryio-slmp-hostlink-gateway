@@ -16,6 +16,8 @@ public enum PlcOperationMode
 
 public sealed class PlcClientService : IAsyncDisposable
 {
+    private static readonly SlmpTargetAddress SlmpOwnStationTarget = new(0x00, 0xFF, SlmpModuleIo.OwnStation, 0x00);
+
     private QueuedSlmpClient? _slmp;
     private QueuedKvHostLinkClient? _hostLink;
 
@@ -68,13 +70,7 @@ public sealed class PlcClientService : IAsyncDisposable
         {
             if (normalized.Protocol.Equals("SLMP", StringComparison.OrdinalIgnoreCase))
             {
-                var profile = ParseSlmpProfile(normalized.SlmpProfile);
-                var options = new SlmpConnectionOptions(normalized.Host, profile)
-                {
-                    Port = normalized.Port,
-                    Timeout = TimeSpan.FromSeconds(Math.Max(1, normalized.TimeoutSec)),
-                    Transport = ParseSlmpTransport(normalized.Transport),
-                };
+                var options = CreateSlmpConnectionOptions(normalized);
                 _slmp = await SlmpClientFactory.OpenAndConnectAsync(options, cancellationToken).ConfigureAwait(false);
                 TraceReported?.Invoke(
                     $"PLC CONNECT SLMP endpoint={normalized.Host}:{normalized.Port} transport={options.Transport} profile={_slmp.PlcProfile} frame={_slmp.FrameType} mode={_slmp.CompatibilityMode} target={_slmp.TargetAddress}");
@@ -99,6 +95,18 @@ public sealed class PlcClientService : IAsyncDisposable
         {
             throw new InvalidOperationException(BuildConnectionFailureMessage(normalized, ex), ex);
         }
+    }
+
+    internal static SlmpConnectionOptions CreateSlmpConnectionOptions(PlcSettings settings)
+    {
+        var profile = ParseSlmpProfile(settings.SlmpProfile);
+        return new SlmpConnectionOptions(settings.Host, profile)
+        {
+            Port = settings.Port,
+            Timeout = TimeSpan.FromSeconds(Math.Max(1, settings.TimeoutSec)),
+            Transport = ParseSlmpTransport(settings.Transport),
+            Target = SlmpOwnStationTarget,
+        };
     }
 
     public async Task DisconnectAsync()

@@ -115,6 +115,14 @@ public sealed class PlcSettingsTests
     }
 
     [Fact]
+    public void Slmp_connection_options_use_own_station_target()
+    {
+        var options = PlcClientService.CreateSlmpConnectionOptions(new PlcSettings().Normalize());
+
+        Assert.Equal(new SlmpTargetAddress(0x00, 0xFF, SlmpModuleIo.OwnStation, 0x00), options.Target);
+    }
+
+    [Fact]
     public void HostLink_profile_options_show_local_kv_model_families()
     {
         Assert.Equal(
