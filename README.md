@@ -137,6 +137,7 @@ canonical profile value.
 | MELSEC iQ-F (built-in) | `melsec:iq-f` |
 | MELSEC iQ-L (built-in) | `melsec:iq-l` |
 | MELSEC MX-R (built-in) | `melsec:mx-r` |
+| MELSEC MX-R (RJ71EN71) | `melsec:mx-r:rj71en71` |
 | MELSEC MX-F (built-in) | `melsec:mx-f` |
 | MELSEC-L (built-in) | `melsec:lcpu` |
 | MELSEC-L (LJ71E71-100) | `melsec:lcpu:lj71e71-100` |
@@ -307,8 +308,8 @@ Float display is different from the expected value:
 | CommunityToolkit.Mvvm | 8.4.2 | ObservableObject and RelayCommand support |
 | CsvHelper | 33.1.0 | Factory I/O tag CSV parsing |
 | NModbus | 3.0.83 | Modbus TCP slave/server |
-| PlcComm.Slmp | 1.2.0 | MELSEC SLMP PLC read/write |
-| PlcComm.KvHostLink | 1.2.0 | KEYENCE Host Link PLC read/write |
+| PlcComm.Slmp | 4.0.0 | MELSEC SLMP PLC read/write |
+| PlcComm.KvHostLink | 3.2.0 | KEYENCE Host Link PLC read/write |
 
 ## License
 
