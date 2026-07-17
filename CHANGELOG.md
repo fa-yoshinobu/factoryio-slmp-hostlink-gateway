@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Updated PLC communication packages to `PlcComm.Slmp` `4.0.0` and `PlcComm.KvHostLink` `3.2.0`.
+- Added `melsec:mx-r:rj71en71` (MELSEC MX-R (RJ71EN71)) to the SLMP PLC profile selector.
+
 ## [1.0.3] - 2026-07-07
 
 ### Changed

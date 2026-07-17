@@ -96,6 +96,7 @@ public sealed class PlcSettingsTests
         var values = PlcSettings.SlmpProfileOptions.Select(option => option.Value).ToArray();
 
         Assert.Contains("melsec:iq-r:rj71en71", values);
+        Assert.Contains("melsec:mx-r:rj71en71", values);
         Assert.Contains("melsec:lcpu:lj71e71-100", values);
         Assert.Contains("melsec:qnu:qj71e71-100", values);
         Assert.Contains("melsec:qnudv:qj71e71-100", values);
@@ -136,11 +137,11 @@ public sealed class PlcSettingsTests
     [Fact]
     public void HostLink_profile_options_are_accepted_by_local_kv_library()
     {
+        var names = KvHostLinkPlcProfiles.GetNames();
         foreach (var option in PlcSettings.HostLinkProfileOptions)
         {
-            var catalog = KvHostLinkDeviceRanges.DeviceRangeCatalogForPlcProfile(option.Value);
-            Assert.Equal(option.Value, catalog.PlcProfile);
-            Assert.Equal(KvHostLinkDeviceRanges.GetDisplayName(option.Value), option.Label);
+            Assert.Contains(option.Value, names);
+            Assert.Equal(KvHostLinkPlcProfiles.GetDisplayName(option.Value), option.Label);
         }
     }
 }

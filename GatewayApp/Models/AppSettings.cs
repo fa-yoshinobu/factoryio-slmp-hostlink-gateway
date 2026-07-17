@@ -54,6 +54,7 @@ public sealed class PlcSettings
         SlmpProfileOption("melsec:iq-f"),
         SlmpProfileOption("melsec:iq-l"),
         SlmpProfileOption("melsec:mx-r"),
+        SlmpProfileOption("melsec:mx-r:rj71en71"),
         SlmpProfileOption("melsec:mx-f"),
         SlmpProfileOption("melsec:lcpu"),
         SlmpProfileOption("melsec:lcpu:lj71e71-100"),
@@ -90,7 +91,7 @@ public sealed class PlcSettings
 
     private static (string Value, string Label) HostLinkProfileOption(string value)
     {
-        return (value, KvHostLinkDeviceRanges.GetDisplayName(value));
+        return (value, KvHostLinkPlcProfiles.GetDisplayName(value));
     }
 
     [JsonRequired]

@@ -79,10 +79,10 @@ public sealed class PlcClientService : IAsyncDisposable
 
             var hostLinkOptions = new KvHostLinkConnectionOptions(
                 normalized.Host,
+                normalized.Port,
+                ParseHostLinkTransport(normalized.Transport),
                 normalized.HostLinkProfile,
-                Port: normalized.Port,
-                Timeout: TimeSpan.FromSeconds(Math.Max(1, normalized.TimeoutSec)),
-                Transport: ParseHostLinkTransport(normalized.Transport));
+                TimeSpan.FromSeconds(Math.Max(1, normalized.TimeoutSec)));
             _hostLink = await KvHostLinkClientFactory.OpenAndConnectAsync(hostLinkOptions, cancellationToken).ConfigureAwait(false);
             TraceReported?.Invoke(
                 $"PLC CONNECT HostLink endpoint={normalized.Host}:{normalized.Port} transport={hostLinkOptions.Transport} profile={_hostLink.PlcProfile}");
@@ -100,12 +100,14 @@ public sealed class PlcClientService : IAsyncDisposable
     internal static SlmpConnectionOptions CreateSlmpConnectionOptions(PlcSettings settings)
     {
         var profile = ParseSlmpProfile(settings.SlmpProfile);
-        return new SlmpConnectionOptions(settings.Host, profile)
+        return new SlmpConnectionOptions(
+            settings.Host,
+            profile,
+            settings.Port,
+            ParseSlmpTransport(settings.Transport),
+            SlmpOwnStationTarget)
         {
-            Port = settings.Port,
             Timeout = TimeSpan.FromSeconds(Math.Max(1, settings.TimeoutSec)),
-            Transport = ParseSlmpTransport(settings.Transport),
-            Target = SlmpOwnStationTarget,
         };
     }
 
