@@ -18,8 +18,8 @@ public sealed class PlcClientService : IAsyncDisposable
 {
     private static readonly SlmpTargetAddress SlmpOwnStationTarget = new(0x00, 0xFF, SlmpModuleIo.OwnStation, 0x00);
 
-    private QueuedSlmpClient? _slmp;
-    private QueuedKvHostLinkClient? _hostLink;
+    private SlmpClient? _slmp;
+    private KvHostLinkClient? _hostLink;
 
     public event Action<string>? TraceReported;
 
@@ -301,7 +301,7 @@ public sealed class PlcClientService : IAsyncDisposable
             ?? throw new InvalidOperationException(Loc.Text("PlcNotConnected"));
         if (block.IsRegister)
         {
-            var words = await _slmp!.ReadWordsRawAsync(start, checked((ushort)block.Count), cancellationToken)
+            var words = await _slmp!.ReadWordsAsync(start, checked((ushort)block.Count), cancellationToken)
                 .ConfigureAwait(false);
             foreach (var point in block.Points)
             {
@@ -326,7 +326,7 @@ public sealed class PlcClientService : IAsyncDisposable
     {
         if (block.IsRegister)
         {
-            var words = await _hostLink!.ReadWordsAsync(block.StartAddressText, block.Count, cancellationToken)
+            var words = await _hostLink!.ReadWordsSingleRequestAsync(block.StartAddressText, block.Count, cancellationToken)
                 .ConfigureAwait(false);
             foreach (var point in block.Points)
             {
