@@ -156,7 +156,7 @@ public sealed class PlcClientService : IAsyncDisposable
         CancellationToken cancellationToken = default)
     {
         var result = new Dictionary<MappingEntry, int>();
-        var (blocks, singles) = BuildBlocks(entries);
+        var (blocks, singles) = BuildBlocks(entries, isWrite: false);
 
         foreach (var single in singles)
         {
@@ -216,7 +216,7 @@ public sealed class PlcClientService : IAsyncDisposable
         CancellationToken cancellationToken = default)
     {
         var rawByEntry = writes.ToDictionary(x => x.Entry, x => x.RawValue);
-        var (blocks, singles) = BuildBlocks(writes.Select(x => x.Entry));
+        var (blocks, singles) = BuildBlocks(writes.Select(x => x.Entry), isWrite: true);
 
         foreach (var single in singles)
         {
@@ -262,17 +262,14 @@ public sealed class PlcClientService : IAsyncDisposable
     {
         return address.DataType switch
         {
-            "BIT" => _hostLink!.WriteAsync(address.BaseAddress, rawValue != 0 ? 1 : 0, dataFormat: string.Empty, cancellationToken),
+            "BIT" => _hostLink!.WriteTypedAsync(address.BaseAddress, "BIT", rawValue != 0, cancellationToken),
             "U" => _hostLink!.WriteTypedAsync(address.BaseAddress, "U", unchecked((ushort)rawValue), cancellationToken),
             _ => _hostLink!.WriteTypedAsync(address.BaseAddress, "S", ConvertRawToSignedWord(rawValue), cancellationToken),
         };
     }
 
-    private async Task<object> ReadHostLinkBitAsync(string baseAddress, CancellationToken cancellationToken)
-    {
-        var tokens = await _hostLink!.ReadAsync(baseAddress, dataFormat: string.Empty, cancellationToken).ConfigureAwait(false);
-        return tokens.FirstOrDefault() ?? "0";
-    }
+    private Task<object> ReadHostLinkBitAsync(string baseAddress, CancellationToken cancellationToken)
+        => _hostLink!.ReadTypedAsync(baseAddress, "BIT", cancellationToken);
 
     private static short ConvertRawToSignedWord(int rawValue)
     {
@@ -301,7 +298,7 @@ public sealed class PlcClientService : IAsyncDisposable
             ?? throw new InvalidOperationException(Loc.Text("PlcNotConnected"));
         if (block.IsRegister)
         {
-            var words = await _slmp!.ReadWordsAsync(start, checked((ushort)block.Count), cancellationToken)
+            var words = await _slmp!.ReadWordsSingleRequestAsync(start, block.Count, cancellationToken)
                 .ConfigureAwait(false);
             foreach (var point in block.Points)
             {
@@ -311,7 +308,7 @@ public sealed class PlcClientService : IAsyncDisposable
             return;
         }
 
-        var bits = await _slmp!.ReadBitsAsync(start, checked((ushort)block.Count), cancellationToken)
+        var bits = await _slmp!.ReadBitsSingleRequestAsync(start, block.Count, cancellationToken)
             .ConfigureAwait(false);
         foreach (var point in block.Points)
         {
@@ -336,11 +333,11 @@ public sealed class PlcClientService : IAsyncDisposable
             return;
         }
 
-        var values = await _hostLink!.ReadConsecutiveAsync(block.StartAddressText, block.Count, string.Empty, cancellationToken)
+        var values = await _hostLink!.ReadBitsSingleRequestAsync(block.StartAddressText, block.Count, cancellationToken)
             .ConfigureAwait(false);
         foreach (var point in block.Points)
         {
-            result[point.Entry] = ConvertPlcValueToRaw(values[checked((int)(point.Number - block.StartNumber))]);
+            result[point.Entry] = values[checked((int)(point.Number - block.StartNumber))] ? 1 : 0;
         }
     }
 
@@ -359,7 +356,7 @@ public sealed class PlcClientService : IAsyncDisposable
                 words[checked((int)(point.Number - block.StartNumber))] = unchecked((ushort)rawByEntry[point.Entry]);
             }
 
-            await _slmp!.WriteWordsAsync(start, words, cancellationToken).ConfigureAwait(false);
+            await _slmp!.WriteWordsSingleRequestAsync(start, words, cancellationToken).ConfigureAwait(false);
             return;
         }
 
@@ -369,7 +366,7 @@ public sealed class PlcClientService : IAsyncDisposable
             bits[checked((int)(point.Number - block.StartNumber))] = rawByEntry[point.Entry] != 0;
         }
 
-        await _slmp!.WriteBitsAsync(start, bits, cancellationToken).ConfigureAwait(false);
+        await _slmp!.WriteBitsSingleRequestAsync(start, bits, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task WriteHostLinkBlockAsync(
@@ -390,18 +387,66 @@ public sealed class PlcClientService : IAsyncDisposable
             return;
         }
 
-        var bits = new int[block.Count];
+        var bits = new bool[block.Count];
         foreach (var point in block.Points)
         {
-            bits[checked((int)(point.Number - block.StartNumber))] = rawByEntry[point.Entry] != 0 ? 1 : 0;
+            bits[checked((int)(point.Number - block.StartNumber))] = rawByEntry[point.Entry] != 0;
         }
 
-        await _hostLink!.WriteConsecutiveAsync(block.StartAddressText, bits, string.Empty, cancellationToken)
+        await _hostLink!.WriteBitsSingleRequestAsync(block.StartAddressText, bits, cancellationToken)
             .ConfigureAwait(false);
     }
 
-    private (List<PlcAccessBlock> Blocks, List<MappingEntry> Singles) BuildBlocks(IEnumerable<MappingEntry> entries)
-        => PlcAccessBlockPlanner.BuildBlocks(entries, TryCreateAccessPoint);
+    private (List<PlcAccessBlock> Blocks, List<MappingEntry> Singles) BuildBlocks(
+        IEnumerable<MappingEntry> entries,
+        bool isWrite)
+        => PlcAccessBlockPlanner.BuildBlocks(
+            entries,
+            TryCreateAccessPoint,
+            (point, count) => IsBlockCountAllowed(point, count, isWrite));
+
+    private bool IsBlockCountAllowed(PlcAccessPoint point, int count, bool isWrite)
+    {
+        if (_slmp is not null)
+            return count <= GetSlmpBlockPointLimit(_slmp.PlcProfile, point.IsRegister, isWrite);
+
+        if (_hostLink is not null)
+            return IsHostLinkBlockCountAllowed(point, count);
+
+        return false;
+    }
+
+    internal static int GetSlmpBlockPointLimit(SlmpPlcProfile profile, bool isRegister, bool isWrite)
+    {
+        var key = (isRegister, isWrite) switch
+        {
+            (true, false) => SlmpProfileLimitKey.DirectWordRead,
+            (true, true) => SlmpProfileLimitKey.DirectWordWrite,
+            (false, false) => SlmpProfileLimitKey.DirectBitRead,
+            (false, true) => SlmpProfileLimitKey.DirectBitWrite,
+        };
+        if (!SlmpPlcProfiles.TryGetProfileLimit(profile, key, out var limit) || limit.MaxPoints < 1)
+            throw new InvalidOperationException($"SLMP request limit '{key}' is unavailable for profile '{profile}'.");
+
+        return limit.MaxPoints;
+    }
+
+    internal static bool IsHostLinkBlockCountAllowed(PlcAccessPoint point, int count)
+    {
+        try
+        {
+            var address = KvHostLinkAddress.Parse(point.AddressText);
+            KvHostLinkDevice.ValidateDeviceCount(
+                address.DeviceType,
+                point.IsRegister ? "U" : string.Empty,
+                count);
+            return true;
+        }
+        catch (HostLinkProtocolError)
+        {
+            return false;
+        }
+    }
 
     private bool TryCreateAccessPoint(MappingEntry entry, out PlcAccessPoint point)
     {

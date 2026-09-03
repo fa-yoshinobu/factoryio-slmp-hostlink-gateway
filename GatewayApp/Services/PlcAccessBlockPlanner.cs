@@ -4,17 +4,18 @@ using PlcComm.Slmp;
 namespace GatewayApp.Services;
 
 internal delegate bool TryCreatePlcAccessPoint(MappingEntry entry, out PlcAccessPoint point);
+internal delegate bool IsPlcAccessBlockCountAllowed(PlcAccessPoint point, int count);
 
 internal static class PlcAccessBlockPlanner
 {
-    public const int MaxBlockPoints = 64;
-
     public static (List<PlcAccessBlock> Blocks, List<MappingEntry> Singles) BuildBlocks(
         IEnumerable<MappingEntry> entries,
-        TryCreatePlcAccessPoint tryCreateAccessPoint)
+        TryCreatePlcAccessPoint tryCreateAccessPoint,
+        IsPlcAccessBlockCountAllowed isBlockCountAllowed)
     {
         ArgumentNullException.ThrowIfNull(entries);
         ArgumentNullException.ThrowIfNull(tryCreateAccessPoint);
+        ArgumentNullException.ThrowIfNull(isBlockCountAllowed);
 
         var points = new List<PlcAccessPoint>();
         var singles = new List<MappingEntry>();
@@ -45,7 +46,7 @@ internal static class PlcAccessBlockPlanner
             .ThenBy(static point => point.DeviceKey, StringComparer.Ordinal)
             .ThenBy(static point => point.Number))
         {
-            if (current is null || !current.CanAdd(point))
+            if (current is null || !current.CanAdd(point, isBlockCountAllowed))
             {
                 current = new PlcAccessBlock(point);
                 blocks.Add(current);
@@ -96,7 +97,7 @@ internal sealed class PlcAccessBlock
 
     public int Count => checked((int)(EndNumber - StartNumber + 1));
 
-    public bool CanAdd(PlcAccessPoint point)
+    public bool CanAdd(PlcAccessPoint point, IsPlcAccessBlockCountAllowed isBlockCountAllowed)
     {
         if (point.IsRegister != IsRegister || point.DeviceKey != DeviceKey)
         {
@@ -105,7 +106,8 @@ internal sealed class PlcAccessBlock
 
         var isSameOrNext = point.Number <= EndNumber
             || (EndNumber < uint.MaxValue && point.Number == EndNumber + 1);
-        return isSameOrNext && Count < PlcAccessBlockPlanner.MaxBlockPoints;
+        var candidateCount = point.Number > EndNumber ? checked(Count + 1) : Count;
+        return isSameOrNext && isBlockCountAllowed(point, candidateCount);
     }
 
     public void Add(PlcAccessPoint point)

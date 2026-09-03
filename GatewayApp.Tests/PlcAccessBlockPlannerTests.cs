@@ -1,5 +1,6 @@
 using GatewayApp.Models;
 using GatewayApp.Services;
+using PlcComm.Slmp;
 using System.Globalization;
 
 namespace GatewayApp.Tests;
@@ -16,7 +17,7 @@ public sealed class PlcAccessBlockPlannerTests
             Entry(ModbusType.HoldingRegister, 2, "D102"),
         };
 
-        var (blocks, singles) = PlcAccessBlockPlanner.BuildBlocks(entries, TryCreatePoint);
+        var (blocks, singles) = PlcAccessBlockPlanner.BuildBlocks(entries, TryCreatePoint, AllowAnyBlockCount);
 
         Assert.Empty(singles);
         var block = Assert.Single(blocks);
@@ -28,17 +29,21 @@ public sealed class PlcAccessBlockPlannerTests
     }
 
     [Fact]
-    public void BuildBlocks_SplitsAtSixtyFourPoints()
+    public void BuildBlocks_SplitsAtProvidedLimit()
     {
+        const int maxBlockPoints = 64;
         var entries = Enumerable.Range(0, 65)
             .Select(index => Entry(ModbusType.HoldingRegister, index, $"D{index.ToString(CultureInfo.InvariantCulture)}"))
             .ToArray();
 
-        var (blocks, singles) = PlcAccessBlockPlanner.BuildBlocks(entries, TryCreatePoint);
+        var (blocks, singles) = PlcAccessBlockPlanner.BuildBlocks(
+            entries,
+            TryCreatePoint,
+            (_, count) => count <= maxBlockPoints);
 
         Assert.Empty(singles);
         Assert.Equal(2, blocks.Count);
-        Assert.Equal(PlcAccessBlockPlanner.MaxBlockPoints, blocks[0].Count);
+        Assert.Equal(maxBlockPoints, blocks[0].Count);
         Assert.Equal(1, blocks[1].Count);
     }
 
@@ -52,7 +57,7 @@ public sealed class PlcAccessBlockPlannerTests
             Entry(ModbusType.Coil, 2, "D102"),
         };
 
-        var (blocks, singles) = PlcAccessBlockPlanner.BuildBlocks(entries, TryCreatePoint);
+        var (blocks, singles) = PlcAccessBlockPlanner.BuildBlocks(entries, TryCreatePoint, AllowAnyBlockCount);
 
         Assert.Empty(singles);
         Assert.Equal(3, blocks.Count);
@@ -71,12 +76,47 @@ public sealed class PlcAccessBlockPlannerTests
             Entry(ModbusType.HoldingRegister, 2, ""),
         };
 
-        var (blocks, singles) = PlcAccessBlockPlanner.BuildBlocks(entries, TryCreatePoint);
+        var (blocks, singles) = PlcAccessBlockPlanner.BuildBlocks(entries, TryCreatePoint, AllowAnyBlockCount);
 
         Assert.Single(blocks);
         Assert.Equal(2, singles.Count);
         Assert.Equal("not-an-address", singles[0].PlcAddress);
         Assert.Equal(string.Empty, singles[1].PlcAddress);
+    }
+
+    [Theory]
+    [InlineData(true, false, SlmpProfileLimitKey.DirectWordRead)]
+    [InlineData(true, true, SlmpProfileLimitKey.DirectWordWrite)]
+    [InlineData(false, false, SlmpProfileLimitKey.DirectBitRead)]
+    [InlineData(false, true, SlmpProfileLimitKey.DirectBitWrite)]
+    public void GetSlmpBlockPointLimit_UsesSelectedProfileLimit(
+        bool isRegister,
+        bool isWrite,
+        SlmpProfileLimitKey expectedKey)
+    {
+        Assert.True(SlmpPlcProfiles.TryGetProfileLimit(SlmpPlcProfile.IqF, expectedKey, out var expected));
+
+        var actual = PlcClientService.GetSlmpBlockPointLimit(SlmpPlcProfile.IqF, isRegister, isWrite);
+
+        Assert.Equal(expected.MaxPoints, actual);
+    }
+
+    [Fact]
+    public void BuildBlocks_UsesHostLinkDeviceCountLimit()
+    {
+        var entries = Enumerable.Range(0, 9)
+            .Select(index => Entry(ModbusType.HoldingRegister, index, $"AT{index.ToString(CultureInfo.InvariantCulture)}"))
+            .ToArray();
+
+        var (blocks, singles) = PlcAccessBlockPlanner.BuildBlocks(
+            entries,
+            TryCreatePoint,
+            PlcClientService.IsHostLinkBlockCountAllowed);
+
+        Assert.Empty(singles);
+        Assert.Equal(2, blocks.Count);
+        Assert.Equal(8, blocks[0].Count);
+        Assert.Equal(1, blocks[1].Count);
     }
 
     private static MappingEntry Entry(ModbusType type, int modbusAddress, string plcAddress) =>
@@ -99,4 +139,6 @@ public sealed class PlcAccessBlockPlannerTests
         point = new PlcAccessPoint(entry, entry.IsRegister, prefix, number, text, null);
         return true;
     }
+
+    private static bool AllowAnyBlockCount(PlcAccessPoint _, int __) => true;
 }
