@@ -7,12 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.1.0] - 2026-09-03
+
 ### Changed
 
 - Updated PLC communication packages to `PlcComm.Slmp` `5.2.0` and `PlcComm.KvHostLink` `4.2.0`.
-- Migrated the removed queued client types and generic read/write calls to the current serialized clients and dedicated typed/single-request APIs.
 - Added `melsec:mx-r:rj71en71` (MELSEC MX-R (RJ71EN71)) to the SLMP PLC profile selector.
-- Split PLC block requests using the selected SLMP profile limits or the Host Link device-specific limits instead of a shared fixed count.
+- Migrated the removed queued client types and generic read/write calls to the current serialized clients and dedicated typed/single-request APIs.
+
+### Fixed
+
+- Split contiguous PLC reads and writes by the selected SLMP profile's operation-specific request limits and the Host Link device/format limit instead of using a shared 64-point cap.
 
 ## [1.0.3] - 2026-07-07
 
