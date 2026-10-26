@@ -1,8 +1,17 @@
 # TODO
 
-No active TODO items are currently open.
+GitHub Markdown task lists: `- [ ]` open, `- [x]` completed.
+
+## Open
+
+- [ ] 次回のリリースで、新しいZIP・SHA-256・英語本文・VirusTotal結果の掲載を確認する（今回は未リリース）。
+
 
 Completed release and maintenance history is tracked in:
 
 - [CHANGELOG.md](CHANGELOG.md)
 - [docs/maintainer-notes.md](docs/maintainer-notes.md)
+
+## Completed
+
+Completed changes are tracked in [CHANGELOG.md](CHANGELOG.md).
