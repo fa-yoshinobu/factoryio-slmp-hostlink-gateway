@@ -315,9 +315,9 @@ Float display is different from the expected value:
 
 MIT License. See `LICENSE` for details.
 
-## Release distribution (next release)
+## Release distribution
 
-The fixed-name ZIP and checksum links below become available with the next standard release. Existing release assets and the download links above remain unchanged.
+The fixed-name ZIP and checksum links below are available for the current release. Older releases retain their original assets.
 
 - [Latest Windows x64 ZIP](https://github.com/fa-yoshinobu/factoryio-slmp-hostlink-gateway/releases/latest/download/FactoryIOGateway-win-x64.zip)
 - [ZIP SHA-256 checksum](https://github.com/fa-yoshinobu/factoryio-slmp-hostlink-gateway/releases/latest/download/FactoryIOGateway-win-x64.zip.sha256)
