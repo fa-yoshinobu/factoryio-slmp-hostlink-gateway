@@ -58,6 +58,30 @@ public sealed class CsvImportServiceTests
         Assert.Equal(Loc.Text("DataTypeMissing"), item.Reason);
     }
 
+    [Fact]
+    public void Preview_PreservesQuotedJapaneseNamesAndAllDataRows()
+    {
+        using var tempFile = new TempCsv(
+            "タグ名,データ型,アドレス",
+            "\"混合槽,温度\",REAL,Holding Reg 0",
+            " バルブ ,Bool,Coil 1");
+
+        var preview = CsvImportService.Preview(tempFile.Path, [], realScale: 100);
+
+        Assert.Equal(2, preview.Count);
+        Assert.Equal("混合槽,温度", preview[0].Name);
+        Assert.Equal("バルブ", preview[1].Name);
+        Assert.All(preview, item => Assert.Equal(CsvImportAction.Add, item.Action));
+    }
+
+    [Fact]
+    public void Preview_RejectsMalformedQuotedData()
+    {
+        using var tempFile = new TempCsv("Name,Data Type,Address", "\"Unclosed,REAL,Holding Reg 0");
+
+        Assert.Throws<CsvHelper.CsvFormatException>(() => CsvImportService.Preview(tempFile.Path, [], realScale: 100));
+    }
+
     private sealed class TempCsv : IDisposable
     {
         public TempCsv(params string[] lines)

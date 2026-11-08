@@ -1,5 +1,4 @@
 using CsvHelper;
-using CsvHelper.Configuration;
 using GatewayApp.Models;
 using System.Globalization;
 using System.IO;
@@ -19,16 +18,15 @@ public static class CsvImportService
 
         var items = new List<CsvImportPreviewItem>();
 
-        var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+        var config = new CsvReaderOptions
         {
-            HeaderValidated = null,
-            MissingFieldFound = null,
-            TrimOptions = TrimOptions.Trim,
+            Separator = ',',
+            TrimWhitespace = true,
+            MalformedData = CsvMalformedDataHandling.Throw,
         };
 
         using var reader = File.OpenText(path);
-        using var csv = new CsvReader(reader, config, leaveOpen: false);
-        csv.Read();
+        using var csv = CsvReader.Create(reader, config, leaveOpen: false);
         csv.ReadHeader();
 
         while (csv.Read())
@@ -210,9 +208,9 @@ public static class CsvImportService
     {
         foreach (var name in names)
         {
-            if (csv.TryGetField<string>(name, out var value))
+            if (csv.TryGetFieldIndex(name, out var index))
             {
-                return value;
+                return csv.GetString(index);
             }
         }
 

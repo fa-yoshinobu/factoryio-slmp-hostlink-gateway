@@ -2,7 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/fa-yoshinobu/factoryio-slmp-hostlink-gateway?sort=semver)](https://github.com/fa-yoshinobu/factoryio-slmp-hostlink-gateway/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
+![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)
 ![Platform](https://img.shields.io/badge/platform-Windows-0078D6)
 ![Static Analysis](https://img.shields.io/badge/static%20analysis-.NET%20analyzers-blue)
 
@@ -306,7 +306,7 @@ Float display is different from the expected value:
 | Library | Version | Purpose |
 |---|---:|---|
 | CommunityToolkit.Mvvm | 8.4.2 | ObservableObject and RelayCommand support |
-| CsvHelper | 33.1.0 | Factory I/O tag CSV parsing |
+| CsvHelper | 34.0.0 | Factory I/O tag CSV parsing |
 | NModbus | 3.0.83 | Modbus TCP slave/server |
 | PlcComm.Slmp | 4.0.0 | MELSEC SLMP PLC read/write |
 | PlcComm.KvHostLink | 3.2.0 | KEYENCE Host Link PLC read/write |

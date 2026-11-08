@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Replaced the application icon with an I/O lamp panel and two-way arrow design in the UI colors, with 9 sizes from 16 to 256 px.
+
 ## [1.1.1] - 2026-10-27
 
 ### Changed
