@@ -31,3 +31,7 @@ jobs:
 
       - name: Smoke tests
         run: dotnet run --project GatewayApp.SmokeTests/GatewayApp.SmokeTests.csproj -c Release --no-build
+
+      - name: Publish distribution
+        shell: cmd
+        run: build.bat

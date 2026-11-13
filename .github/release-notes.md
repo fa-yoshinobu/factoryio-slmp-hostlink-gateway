@@ -5,14 +5,12 @@
 ## Getting started
 Extract the ZIP file, then run `FactoryIOGateway.exe`. See the README for Factory I/O and PLC connection settings.
 
-Requirements: Windows x64. The .NET runtime is included.
+Requirements: Windows 10 or later (x64). The .NET runtime is included.
 
 ## Changes
 ### Changed
-- Standardized Windows ZIP distribution, checksums and release documentation.
-
-### Fixed
-- Wait for VirusTotal analysis to complete and preserve unrelated release notes when updating scan results.
+- Align local and CI executable, fixed-name distribution ZIP and SHA-256 output under `artifacts/release/`.
+- Require the VirusTotal API SHA-256 to match every published executable before reporting a completed scan.
 
 <!-- virustotal:start -->
 {{VIRUSTOTAL_CONTENT}}
