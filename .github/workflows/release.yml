@@ -67,48 +67,9 @@ jobs:
       - name: Smoke tests
         run: dotnet run --project GatewayApp.SmokeTests/GatewayApp.SmokeTests.csproj -c Release --no-build
 
-      - name: Publish single-file executable
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $publishDir = Join-Path $env:RUNNER_TEMP 'factoryio-gateway-win-x64'
-
-          if (Test-Path $publishDir) {
-            Remove-Item -LiteralPath $publishDir -Recurse -Force
-          }
-
-          dotnet publish GatewayApp/GatewayApp.csproj `
-            -c Release `
-            -r win-x64 `
-            --self-contained true `
-            -o $publishDir `
-            -p:PublishSingleFile=true `
-            -p:IncludeNativeLibrariesForSelfExtract=true `
-            -p:EnableCompressionInSingleFile=true `
-            -p:DebugType=None `
-            -p:DebugSymbols=false
-
-          $exePath = Join-Path $publishDir 'FactoryIOGateway.exe'
-          if (-not (Test-Path $exePath)) {
-            throw "FactoryIOGateway.exe was not created."
-          }
-
-          Get-ChildItem -LiteralPath $publishDir -Force |
-            Where-Object { $_.Name -ne 'FactoryIOGateway.exe' } |
-            ForEach-Object {
-              if ($_.PSIsContainer) {
-                Remove-Item -LiteralPath $_.FullName -Recurse -Force
-              } else {
-                Remove-Item -LiteralPath $_.FullName -Force
-              }
-            }
-
-          $assetDir = Join-Path $env:RUNNER_TEMP 'release-assets'
-          New-Item -ItemType Directory -Force -Path $assetDir | Out-Null
-          $assetPath = Join-Path $assetDir $env:ASSET_NAME
-          Compress-Archive -LiteralPath $exePath -DestinationPath $assetPath -Force
-
-          "ASSET_PATH=$assetPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Publish distribution
+        shell: cmd
+        run: build.bat
 
       - name: Set up release tools
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
@@ -120,7 +81,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ env.TAG }}
         run: |
-          python .github/scripts/release_assets.py prepare --repository "$env:GITHUB_REPOSITORY" --release-tag "$env:RELEASE_TAG" --asset-name FactoryIOGateway-win-x64.zip --zip "$env:ASSET_PATH"
+          python .github/scripts/release_assets.py prepare --repository "$env:GITHUB_REPOSITORY" --release-tag "$env:RELEASE_TAG" --asset-name FactoryIOGateway-win-x64.zip --zip artifacts/release/FactoryIOGateway-win-x64.zip
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Publish ZIP and checksum
